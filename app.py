@@ -22,71 +22,106 @@ st.set_page_config(
 # ── Custom CSS ────────────────────────────────────────────────────
 st.markdown("""
 <style>
-/* Tổng thể */
-.stApp { background-color: #f5f5f0; }
-[data-testid="stSidebar"] { background-color: #1a1a2e; color: white; }
-[data-testid="stSidebar"] * { color: white !important; }
-[data-testid="stSidebar"] .stTextInput > label { color: #aaa !important; }
+/* ── Tổng thể: nền trắng sáng, chữ tối ── */
+.stApp { background-color: #f8f9fa; }
 
-/* Item card */
+/* ── Sidebar: xanh navy nhẹ hơn, dễ đọc hơn ── */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #1e3a5f 0%, #2d5986 100%);
+}
+[data-testid="stSidebar"] * { color: #e8f0fe !important; }
+[data-testid="stSidebar"] h2 { color: #ffffff !important; font-size: 20px !important; }
+[data-testid="stSidebar"] .stButton button {
+    background: #e53935; color: white; border-radius: 8px;
+}
+
+/* ── Heading chính: chữ tối, rõ ràng ── */
+h1, h2, h3 { color: #1a237e !important; }
+
+/* ── Input box: nền trắng, viền xanh ── */
+.stNumberInput input {
+    background: #ffffff !important;
+    color: #212121 !important;
+    border: 2px solid #3f51b5 !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+}
+
+/* ── Buttons ── */
+.stButton > button[kind="primary"] {
+    background: #e53935 !important;
+    color: white !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    border: none !important;
+}
+.stButton > button:not([kind="primary"]) {
+    background: #1a237e !important;
+    color: white !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    border: none !important;
+}
+
+/* ── Item card ── */
 .item-card {
     background: white;
     border-radius: 12px;
     padding: 12px;
     text-align: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    transition: transform 0.2s, box-shadow 0.2s;
-    border: 1px solid #eee;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    border: 1px solid #e0e0e0;
     position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 .item-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
 }
 .item-card img {
     width: 100%; height: 140px;
-    object-fit: cover;
-    border-radius: 8px;
-    margin-bottom: 8px;
+    object-fit: cover; border-radius: 8px; margin-bottom: 8px;
 }
-.item-card .item-id { font-weight: 700; font-size: 13px; color: #333; }
+.item-card .item-id { font-weight: 700; font-size: 13px; color: #212121; }
 .item-card .item-cat {
     font-size: 11px; color: white;
-    background: #6c63ff;
+    background: #3f51b5;
     border-radius: 20px; padding: 2px 8px;
     display: inline-block; margin: 4px 0;
 }
-.item-card .item-pop { font-size: 11px; color: #888; }
+.item-card .item-pop { font-size: 11px; color: #757575; }
 .item-card .hit-badge {
     position: absolute; top: 8px; right: 8px;
-    background: #ff4b6e; color: white;
-    border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700;
+    background: #e53935; color: white;
+    border-radius: 20px; padding: 2px 8px;
+    font-size: 11px; font-weight: 700;
 }
 .item-card .seen-badge {
     position: absolute; top: 8px; left: 8px;
-    background: #00b4d8; color: white;
+    background: #00acc1; color: white;
     border-radius: 20px; padding: 2px 8px; font-size: 10px;
 }
 
-/* History chip */
+/* ── History chip ── */
 .history-chip {
     display: inline-block;
-    background: #e8f4fd;
-    border: 1px solid #b3d9f7;
-    border-radius: 20px;
-    padding: 4px 12px;
-    margin: 3px;
-    font-size: 12px;
-    color: #1565c0;
+    background: #e8eaf6; border: 1px solid #9fa8da;
+    border-radius: 20px; padding: 4px 12px; margin: 3px;
+    font-size: 12px; color: #283593;
 }
 
-/* Metric card */
+/* ── Metric card ── */
 .metric-card {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
+    background: white; border-radius: 12px;
+    padding: 20px; text-align: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}   
+
+/* ── Tab labels rõ hơn ── */
+.stTabs [data-baseweb="tab"] {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: #1a237e !important;
 }
 </style>
 """, unsafe_allow_html=True)
