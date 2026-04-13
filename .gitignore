@@ -1,0 +1,11 @@
+# Secrets — KHÔNG BAO GIỜ push lên GitHub
+.streamlit/secrets.toml
+.env
+
+# Python cache
+__pycache__/
+.venv/
+*.pyc
+
+# Raw data files quá lớn — đã precompute thành pkl rồi
+item_properties_part*.csv
