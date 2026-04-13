@@ -335,18 +335,32 @@ with tab1:
                         gt = seq[-3:]
                         st.caption(f"🎯 Ground Truth (3 items tiếp theo): {gt}")
 
-                results = recommend_existing_user(
-                    user_id          = target_user_id,
-                    user2idx         = M["user2idx"],
-                    item2idx         = M["item2idx"],
-                    idx2item         = M["idx2item"],
-                    als_model        = M["als_model"],
-                    user_item_matrix = M["user_item_matrix"],
-                    item_popularity  = M["item_popularity"],
-                    item_event_type  = M["item_event_type"],
-                    history_set      = history_set,
-                    top_k            = 10,
-                )
+                # Thêm bounds check trước khi recommend
+                u_idx = M["user2idx"].get(target_user_id, -1)
+                if u_idx < 0 or u_idx >= M["als_model"].user_factors.shape[0]:
+                    st.warning("⚠️ User ID không hợp lệ hoặc ngoài phạm vi model. Hiển thị trending thay thế.")
+                    results = get_cold_start_recommendations(
+                        M["cold_start_data"], M["item_popularity"], M["item_event_type"]
+                    )
+                else:
+                    try:
+                        results = recommend_existing_user(
+                            user_id          = target_user_id,
+                            user2idx         = M["user2idx"],
+                            item2idx         = M["item2idx"],
+                            idx2item         = M["idx2item"],
+                            als_model        = M["als_model"],
+                            user_item_matrix = M["user_item_matrix"],
+                            item_popularity  = M["item_popularity"],
+                            item_event_type  = M["item_event_type"],
+                            history_set      = history_set,
+                            top_k            = 10,
+                        )
+                    except Exception as e:
+                        st.warning(f"⚠️ Không thể recommend cho user này. Hiển thị trending thay thế.")
+                        results = get_cold_start_recommendations(
+                            M["cold_start_data"], M["item_popularity"], M["item_event_type"]
+                        )
 
         # ── Hiển thị kết quả dạng card grid ─────────────────────
         if results:
