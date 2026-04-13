@@ -220,7 +220,7 @@ with st.sidebar:
     st.markdown("**ℹ️ Về model**")
     st.markdown("""
     - **ALS** (Alternating Least Squares)  
-    - Factors: 64 · Alpha: 40  
+    - Factors: 128 · Alpha: 100
     - 1.4M users · 235K items
     """)
 
@@ -419,10 +419,10 @@ with tab2:
         | Parameter | Value |
         |---|---|
         | Algorithm | ALS (Implicit Feedback) |
-        | Factors | 64 |
+        | Factors | 128 |
         | Iterations | 20 |
         | Regularization | 0.01 |
-        | Alpha (confidence) | 40 |
+        | Alpha (confidence) | 100 |
         """)
     with col_b:
         st.markdown("""
@@ -431,7 +431,7 @@ with tab2:
         | Total users | 1,407,580 |
         | Total items | 235,061 |
         | Events | 2,755,641 |
-        | Event weights | view×1, cart×2, buy×5 |
+        | Event weights | view×1, cart×3, buy×10 |
         | Train/Val/Test | 38,576 / 5,440 / 11,104 |
         """)
 
