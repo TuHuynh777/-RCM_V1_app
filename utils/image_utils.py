@@ -154,7 +154,7 @@ def get_item_image_url(item_id: int, item_cat_map: dict) -> str:
         if key.lower() in cat.lower():
             urls = CATEGORY_IMAGES[key]
             # Random ảnh trong list để đa dạng hơn
-            return urls[item_id % len(urls)]
+            return random.choice(urls)
     
     # Fallback
     return f"https://picsum.photos/seed/{item_id}/300/200"
