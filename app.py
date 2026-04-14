@@ -147,6 +147,10 @@ with st.sidebar:
     st.markdown("**ALS Recommender · V1**")
     st.divider()
 
+    st.caption(f"user_factors shape: {M['als_model'].user_factors.shape[0]}")
+    st.caption(f"user2idx size: {len(M['user2idx'])}")
+    st.caption(f"test_df size: {len(M['test_df'])}")
+
     if st.session_state.logged_in:
         st.success(f"👋 Xin chào, **{st.session_state.username}**!")
         st.caption(f"User ID: `{st.session_state.user_id[:8]}...`")
@@ -240,7 +244,13 @@ with tab1:
                 lambda v: 0 <= M["user2idx"].get(v, -1) < max_u
             )
         ]
-        random_row = valid_df.sample(1).iloc[0]
+        if valid_df.empty:
+            st.warning("⚠️ Không tìm được user hợp lệ trong test set. Thử sample không filter.")
+            # Fallback: sample toàn bộ test_df, để bounds check trong recommender.py xử lý
+            random_row = M["test_df"].sample(1).iloc[0]
+        else:
+            random_row = valid_df.sample(1).iloc[0]
+
         st.session_state["random_user_id"]  = int(random_row["visitorid"])
         st.session_state["random_user_seq"] = random_row["item_sequence"]
         st.rerun()
