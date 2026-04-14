@@ -50,6 +50,10 @@ def load_als_artifacts():
     with open(als_path,  "rb") as f: als_model        = pickle.load(f)
     with open(map_path,  "rb") as f: mappings          = pickle.load(f)
     user_item_matrix = sparse.load_npz(matrix_path)
+
+    print(f"[DEBUG] user_factors shape : {als_model.user_factors.shape}")
+    print(f"[DEBUG] item_factors shape : {als_model.item_factors.shape}")
+    print(f"[DEBUG] user2idx size      : {len(mappings['user2idx'])}")
     return als_model, user_item_matrix, mappings
 
 
