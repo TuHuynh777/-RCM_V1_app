@@ -7,24 +7,44 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import os, pickle   
-
+import random
 # ── Ảnh e-commerce theo category (stable Unsplash URLs) ──────────
 # Mỗi URL là 1 ảnh cố định, không đổi theo thời gian
 CATEGORY_IMAGES = {
      # Tên phải KHỚP với CATEGORY_NAMES trong build_item_category_map.py
-"Electronics"      : "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=300&h=300&fit=crop&auto=format",
-    "Fashion"          : "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=300&fit=crop&auto=format",
-    "Sports & Outdoor" : "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=300&h=300&fit=crop&auto=format",
-    "Home & Garden"    : "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=300&h=300&fit=crop&auto=format",
-    "Beauty & Health"  : "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=300&h=300&fit=crop&auto=format",
-    "Books & Media"    : "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=300&fit=crop&auto=format",
-    "Toys & Kids"      : "https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=300&h=300&fit=crop&auto=format",
-    "Automotive"       : "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=300&h=300&fit=crop&auto=format",
-    "Food & Grocery"   : "https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&h=300&fit=crop&auto=format",
-    "Jewelry & Watches": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&h=300&fit=crop&auto=format",
-    "Furniture"        : "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=300&h=300&fit=crop&auto=format",
-    "Pet Supplies"     : "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=300&h=300&fit=crop&auto=format",
-    "General"          : "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=300&h=300&fit=crop&auto=format",
+"Electronics":     [
+        "https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=300",
+        "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=300",
+        "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=300",
+    ],
+    "Books":           [
+        "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300",
+        "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=300",
+    ],
+    "Media":           [
+        "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300",
+        "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=300",
+    ],
+    "Beauty":          [
+        "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=300",
+        "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=300",
+    ],
+    "Health":          [
+        "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300",
+        "https://images.unsplash.com/photo-1505576399279-565b52d4ac71?w=300",
+    ],
+    "Toys & Kids":     [
+        "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300",
+        "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=300",
+    ],
+    "Automotive":      [
+        "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=300",
+        "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=300",
+    ],
+    "Sports":          [
+        "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=300",
+        "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=300",
+    ],
 }
 
 # Tên category theo thứ tự để assign cho top-level category IDs
@@ -127,8 +147,17 @@ def get_item_category(item_id: int, item_cat_map: dict) -> str:
 
 def get_item_image_url(item_id: int, item_cat_map: dict) -> str:
     """Lấy URL ảnh đại diện cho item theo category của nó"""
-    category = get_item_category(item_id, item_cat_map)
-    return CATEGORY_IMAGES.get(category, CATEGORY_IMAGES["General"])
+    cat = get_item_category(item_id, item_cat_map)  # "Books & Media" → cần split
+    
+    # Tách category phức hợp → tìm từ khóa khớp
+    for key in CATEGORY_IMAGES:
+        if key.lower() in cat.lower():
+            urls = CATEGORY_IMAGES[key]
+            # Random ảnh trong list để đa dạng hơn
+            return urls[item_id % len(urls)]
+    
+    # Fallback
+    return f"https://picsum.photos/seed/{item_id}/300/200"
 
 
 def get_event_emoji(event_type: str) -> str:

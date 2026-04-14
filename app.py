@@ -232,8 +232,16 @@ with tab1:
 
     if btn_random and M["test_df"] is not None:
         st.session_state.show_warning = False
-        random_row = M["test_df"].sample(1).iloc[0]
-        st.session_state["random_user_id"] = int(random_row["visitorid"])
+        max_u = M["als_model"].user_factors.shape[0]
+
+        # Chỉ lấy users có embedding thật trong user_factors
+        valid_df = M["test_df"][
+            M["test_df"]["visitorid"].map(
+                lambda v: 0 <= M["user2idx"].get(v, -1) < max_u
+            )
+        ]
+        random_row = valid_df.sample(1).iloc[0]
+        st.session_state["random_user_id"]  = int(random_row["visitorid"])
         st.session_state["random_user_seq"] = random_row["item_sequence"]
         st.rerun()
 
@@ -287,7 +295,8 @@ with tab1:
                 history_set = set(history_raw)
 
                 if history_raw:
-                    st.markdown(f"**📜 Lịch sử user `{target_user_id}`** ({len(history_raw)} items, 5 cuối):")
+                    n_show = min(5, len(history_raw))
+                    st.markdown(f"**📜 Lịch sử user `{target_user_id}`** ({len(history_raw)} items, {n_show} cuối):")
                     chips = "".join([
                         f'<span class="history-chip">#{i} · {get_item_category(i, M["item_cat_map"])}</span>'  for i in history_raw[-5:]
                     ])
