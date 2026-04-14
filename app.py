@@ -6,39 +6,28 @@ import streamlit as st
 import numpy as np
 import os
 
-from utils.model_loader  import load_als_artifacts, load_cold_start, load_events_metadata, load_test_df
-from utils.recommender   import recommend_existing_user, recommend_new_user, get_cold_start_recommendations
-from utils.image_utils   import load_item_category_map, get_item_category, get_item_image_url, get_event_emoji
+from utils.model_loader import load_als_artifacts, load_cold_start, load_events_metadata, load_test_df
+from utils.recommender import recommend_existing_user, recommend_new_user, get_cold_start_recommendations
+from utils.image_utils import load_item_category_map, get_item_category, get_item_image_url, get_event_emoji
 from utils.supabase_client import register, login, logout, save_interaction, get_user_interactions
 
-# ── Page config ───────────────────────────────────────────────────
+
 st.set_page_config(
-    page_title = "ShopSense — Recommender V1",
-    page_icon  = "🛍️",
-    layout     = "wide",
-    initial_sidebar_state = "expanded",
+    page_title="ShopSense — Recommender V1",
+    page_icon="🛍️",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# ── Custom CSS ────────────────────────────────────────────────────
+
 st.markdown("""
 <style>
-/* ── Tổng thể: nền trắng sáng, chữ tối ── */
 .stApp { background-color: #f8f9fa; }
-
-/* ── Sidebar: xanh navy nhẹ hơn, dễ đọc hơn ── */
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #1e3a5f 0%, #2d5986 100%);
-}
+[data-testid="stSidebar"] { background: linear-gradient(180deg, #1e3a5f 0%, #2d5986 100%); }
 [data-testid="stSidebar"] * { color: #e8f0fe !important; }
 [data-testid="stSidebar"] h2 { color: #ffffff !important; font-size: 20px !important; }
-[data-testid="stSidebar"] .stButton button {
-    background: #e53935; color: white; border-radius: 8px;
-}
-
-/* ── Heading chính: chữ tối, rõ ràng ── */
+[data-testid="stSidebar"] .stButton button { background: #e53935; color: white; border-radius: 8px; }
 h1, h2, h3 { color: #1a237e !important; }
-
-/* ── Input box: nền trắng, viền xanh ── */
 .stNumberInput input {
     background: #ffffff !important;
     color: #212121 !important;
@@ -46,8 +35,13 @@ h1, h2, h3 { color: #1a237e !important; }
     border-radius: 8px !important;
     font-size: 16px !important;
 }
-
-/* ── Buttons ── */
+.stTextInput input {
+    background: #ffffff !important;
+    color: #212121 !important;
+    border: 2px solid #3f51b5 !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+}
 .stButton > button[kind="primary"] {
     background: #e53935 !important;
     color: white !important;
@@ -62,8 +56,6 @@ h1, h2, h3 { color: #1a237e !important; }
     font-weight: 600 !important;
     border: none !important;
 }
-
-/* ── Item card ── */
 .item-card {
     background: white;
     border-radius: 12px;
@@ -74,10 +66,7 @@ h1, h2, h3 { color: #1a237e !important; }
     position: relative;
     transition: transform 0.2s, box-shadow 0.2s;
 }
-.item-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-}
+.item-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
 .item-card img {
     width: 100%; height: 140px;
     object-fit: cover; border-radius: 8px; margin-bottom: 8px;
@@ -101,23 +90,17 @@ h1, h2, h3 { color: #1a237e !important; }
     background: #00acc1; color: white;
     border-radius: 20px; padding: 2px 8px; font-size: 10px;
 }
-
-/* ── History chip ── */
 .history-chip {
     display: inline-block;
     background: #e8eaf6; border: 1px solid #9fa8da;
     border-radius: 20px; padding: 4px 12px; margin: 3px;
     font-size: 12px; color: #283593;
 }
-
-/* ── Metric card ── */
 .metric-card {
     background: white; border-radius: 12px;
     padding: 20px; text-align: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}   
-
-/* ── Tab labels rõ hơn ── */
+}
 .stTabs [data-baseweb="tab"] {
     font-size: 15px !important;
     font-weight: 600 !important;
@@ -126,42 +109,39 @@ h1, h2, h3 { color: #1a237e !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Load models (cached) ──────────────────────────────────────────
+
 @st.cache_resource(show_spinner="⏳ Initializing models...")
 def init_models():
     als_model, user_item_matrix, mappings = load_als_artifacts()
-    cold_start_data                        = load_cold_start()
-    item_popularity, item_event_type       = load_events_metadata()
-    test_df                                = load_test_df()
-
-    # Category mapping cho ảnh sản phẩm
-    # Adjust paths nếu có item_properties files
-    item_cat_map  = load_item_category_map()  # fallback nếu không có file
-
+    cold_start_data = load_cold_start()
+    item_popularity, item_event_type = load_events_metadata()
+    test_df = load_test_df()
+    item_cat_map = load_item_category_map()
     return {
-        "als_model"        : als_model,
-        "user_item_matrix" : user_item_matrix,
-        "user2idx"         : mappings["user2idx"],
-        "item2idx"         : mappings["item2idx"],
-        "idx2item"         : mappings["idx2item"],
-        "cold_start_data"  : cold_start_data,
-        "item_popularity"  : item_popularity,
-        "item_event_type"  : item_event_type,
-        "item_cat_map"     : item_cat_map,
-        "test_df"          : test_df,
+        "als_model": als_model,
+        "user_item_matrix": user_item_matrix,
+        "user2idx": mappings["user2idx"],
+        "item2idx": mappings["item2idx"],
+        "idx2item": mappings["idx2item"],
+        "cold_start_data": cold_start_data,
+        "item_popularity": item_popularity,
+        "item_event_type": item_event_type,
+        "item_cat_map": item_cat_map,
+        "test_df": test_df,
     }
+
 
 M = init_models()
 
-# ── Session state defaults ────────────────────────────────────────
-if "logged_in"   not in st.session_state: st.session_state.logged_in   = False
-if "user_id"     not in st.session_state: st.session_state.user_id     = None
-if "username"    not in st.session_state: st.session_state.username    = None
-if "auth_tab"    not in st.session_state: st.session_state.auth_tab    = "login"
 
-# ════════════════════════════════════════════════════════════════════
-# SIDEBAR — Login / Register
-# ════════════════════════════════════════════════════════════════════
+if "logged_in" not in st.session_state: st.session_state.logged_in = False
+if "user_id" not in st.session_state: st.session_state.user_id = None
+if "username" not in st.session_state: st.session_state.username = None
+if "auth_tab" not in st.session_state: st.session_state.auth_tab = "login"
+if "show_warning" not in st.session_state: st.session_state.show_warning = False
+if "last_results_mode" not in st.session_state: st.session_state.last_results_mode = None
+
+
 with st.sidebar:
     st.markdown("## 🛍️ ShopSense")
     st.markdown("**ALS Recommender · V1**")
@@ -173,8 +153,8 @@ with st.sidebar:
         if st.button("🚪 Đăng xuất", use_container_width=True):
             logout()
             st.session_state.logged_in = False
-            st.session_state.user_id   = None
-            st.session_state.username  = None
+            st.session_state.user_id = None
+            st.session_state.username = None
             st.rerun()
         st.divider()
         st.markdown("**📦 Lịch sử mua sắm của bạn**")
@@ -186,26 +166,25 @@ with st.sidebar:
         else:
             st.caption("Chưa có lịch sử. Hãy click vào sản phẩm!")
     else:
-        # Login / Register tabs
         tab_login, tab_reg = st.tabs(["🔑 Đăng nhập", "📝 Đăng ký"])
         with tab_login:
-            uname = st.text_input("Username",  key="login_user", placeholder="Nhập username")
-            pwd   = st.text_input("Password",  key="login_pwd",  type="password")
+            uname = st.text_input("Username", key="login_user", placeholder="Nhập username")
+            pwd = st.text_input("Password", key="login_pwd", type="password")
             if st.button("Đăng nhập", use_container_width=True, type="primary"):
                 if uname and pwd:
                     res = login(uname, pwd)
                     if res["success"]:
                         st.session_state.logged_in = True
-                        st.session_state.user_id   = res["user"].id
-                        st.session_state.username  = uname
+                        st.session_state.user_id = res["user"].id
+                        st.session_state.username = uname
                         st.rerun()
                     else:
                         st.error(res["error"])
                 else:
                     st.warning("Vui lòng nhập đầy đủ")
         with tab_reg:
-            new_u = st.text_input("Username",  key="reg_user",  placeholder="Chọn username")
-            new_p = st.text_input("Password",  key="reg_pwd",   type="password", placeholder="≥ 6 ký tự")
+            new_u = st.text_input("Username", key="reg_user", placeholder="Chọn username")
+            new_p = st.text_input("Password", key="reg_pwd", type="password", placeholder="≥ 6 ký tự")
             if st.button("Tạo tài khoản", use_container_width=True):
                 if new_u and new_p:
                     res = register(new_u, new_p)
@@ -219,24 +198,17 @@ with st.sidebar:
     st.divider()
     st.markdown("**ℹ️ Về model**")
     st.markdown("""
-    - **ALS** (Alternating Least Squares)  
+    - **ALS** (Alternating Least Squares)
     - Factors: 128 · Alpha: 100
     - 1.4M users · 235K items
     """)
 
-# ════════════════════════════════════════════════════════════════════
-# MAIN CONTENT — 3 Tabs
-# ════════════════════════════════════════════════════════════════════
+
 tab1, tab2, tab3 = st.tabs(["🔍 Gợi ý sản phẩm", "📊 Hiệu suất Model", "❄️ Cold Start"])
 
 
-# ────────────────────────────────────────────────────────────────────
-# TAB 1: RECOMMEND
-# ────────────────────────────────────────────────────────────────────
 with tab1:
     st.markdown("## 🛒 Gợi ý sản phẩm cá nhân hoá")
-
-    # ── Input section ─────────────────────────────────────────────
     col_input, col_mode = st.columns([3, 1])
     with col_input:
         user_input_id = st.number_input(
@@ -258,63 +230,54 @@ with tab1:
     with col_btn2:
         btn_random = st.button("🎲 Random user", use_container_width=True)
 
-    # Random user từ test_df
     if btn_random and M["test_df"] is not None:
+        st.session_state.show_warning = False
         random_row = M["test_df"].sample(1).iloc[0]
-        st.session_state["random_user_id"]  = int(random_row["visitorid"])
+        st.session_state["random_user_id"] = int(random_row["visitorid"])
         st.session_state["random_user_seq"] = random_row["item_sequence"]
         st.rerun()
 
-    # ── Determine user + sequence ──────────────────────────────────
     target_user_id = None
-    seq            = []
+    seq = []
 
     if "random_user_id" in st.session_state:
         target_user_id = st.session_state.pop("random_user_id")
-        seq            = st.session_state.pop("random_user_seq", [])
-        btn_recommend  = True  # auto trigger
+        seq = st.session_state.pop("random_user_seq", [])
+        btn_recommend = True
 
     if btn_recommend or target_user_id is not None:
         if target_user_id is None:
             target_user_id = int(user_input_id)
 
-        # Mode 1: dùng lịch sử Supabase (logged-in user)
         if use_logged_history and st.session_state.logged_in:
             supabase_history = get_user_interactions(st.session_state.user_id)
             if supabase_history:
                 st.info(f"🔗 Dùng {len(supabase_history)} interactions từ lịch sử cá nhân của bạn")
-                history_set = set(supabase_history)
                 results = recommend_new_user(
-                    item_history    = supabase_history,
-                    item2idx        = M["item2idx"],
-                    idx2item        = M["idx2item"],
-                    als_model       = M["als_model"],
-                    item_popularity = M["item_popularity"],
-                    item_event_type = M["item_event_type"],
-                    top_k           = 10,
+                    item_history=supabase_history,
+                    item2idx=M["item2idx"],
+                    idx2item=M["idx2item"],
+                    als_model=M["als_model"],
+                    item_popularity=M["item_popularity"],
+                    item_event_type=M["item_event_type"],
+                    top_k=10,
                 )
-                # Hiện history
-                if supabase_history:
-                    st.markdown("**Lịch sử của bạn** (5 gần nhất):")
-                    chips = "".join([
-                        f'<span class="history-chip">#{i} · {get_item_category(i, M["item_cat_map"])}</span>'
-                        for i in supabase_history[-5:]
-                    ])
-                    st.markdown(chips, unsafe_allow_html=True)
+                st.markdown("**Lịch sử của bạn** (5 gần nhất):")
+                chips = "".join([
+                    f'<span class="history-chip">#{i} · {get_item_category(i, M["item_cat_map"])}</span>'  for i in supabase_history[-5:]
+                ])
+                st.markdown(chips, unsafe_allow_html=True)
             else:
                 st.warning("Bạn chưa có lịch sử. Hãy click vào sản phẩm để build history!")
                 results = []
-
-        # Mode 2: dùng Visitor ID từ dataset
+                seq = []
         else:
             if target_user_id not in M["user2idx"]:
                 st.warning("⚠️ User ID này không có trong dataset. Hiển thị trending thay thế.")
-                results = get_cold_start_recommendations(
-                    M["cold_start_data"], M["item_popularity"], M["item_event_type"]
-                )
+                results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
                 seq = []
+                st.session_state.show_warning = True
             else:
-                # Lấy history từ test_df nếu có
                 if not seq and M["test_df"] is not None:
                     rows = M["test_df"][M["test_df"]["visitorid"] == target_user_id]
                     if not rows.empty:
@@ -323,103 +286,78 @@ with tab1:
                 history_raw = seq[:-3] if len(seq) > 3 else seq
                 history_set = set(history_raw)
 
-                # Hiện history
                 if history_raw:
                     st.markdown(f"**📜 Lịch sử user `{target_user_id}`** ({len(history_raw)} items, 5 cuối):")
                     chips = "".join([
-                        f'<span class="history-chip">#{i} · {get_item_category(i, M["item_cat_map"])}</span>'
-                        for i in history_raw[-5:]
+                        f'<span class="history-chip">#{i} · {get_item_category(i, M["item_cat_map"])}</span>'  for i in history_raw[-5:]
                     ])
                     st.markdown(chips, unsafe_allow_html=True)
+                    with st.expander(f"📋 Xem đầy đủ sequence ({len(history_raw)} items)"):
+                        for idx, item_id in enumerate(history_raw):
+                            st.markdown(f"`{idx+1}.` Item **#{item_id}** — {get_item_category(item_id, M['item_cat_map'])}")
                     if len(seq) > 3:
                         gt = seq[-3:]
                         st.caption(f"🎯 Ground Truth (3 items tiếp theo): {gt}")
 
-                # Thêm bounds check trước khi recommend
                 u_idx = M["user2idx"].get(target_user_id, -1)
                 if u_idx < 0 or u_idx >= M["als_model"].user_factors.shape[0]:
                     st.warning("⚠️ User ID không hợp lệ hoặc ngoài phạm vi model. Hiển thị trending thay thế.")
-                    results = get_cold_start_recommendations(
-                        M["cold_start_data"], M["item_popularity"], M["item_event_type"]
-                    )
+                    results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
+                    st.session_state.show_warning = True
                 else:
                     try:
                         results = recommend_existing_user(
-                            user_id          = target_user_id,
-                            user2idx         = M["user2idx"],
-                            item2idx         = M["item2idx"],
-                            idx2item         = M["idx2item"],
-                            als_model        = M["als_model"],
-                            user_item_matrix = M["user_item_matrix"],
-                            item_popularity  = M["item_popularity"],
-                            item_event_type  = M["item_event_type"],
-                            history_set      = history_set,
-                            top_k            = 10,
+                            user_id=target_user_id,
+                            user2idx=M["user2idx"],
+                            item2idx=M["item2idx"],
+                            idx2item=M["idx2item"],
+                            als_model=M["als_model"],
+                            user_item_matrix=M["user_item_matrix"],
+                            item_popularity=M["item_popularity"],
+                            item_event_type=M["item_event_type"],
+                            history_set=history_set,
+                            top_k=10,
                         )
-                    except Exception as e:
-                        st.warning(f"⚠️ Không thể recommend cho user này. Hiển thị trending thay thế.")
-                        results = get_cold_start_recommendations(
-                            M["cold_start_data"], M["item_popularity"], M["item_event_type"]
-                        )
+                        st.session_state.show_warning = False
+                    except Exception:
+                        st.warning("⚠️ Không thể recommend cho user này. Hiển thị trending thay thế.")
+                        results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
+                        st.session_state.show_warning = True
 
-        # ── Hiển thị kết quả dạng card grid ─────────────────────
         if results:
-            # GT items để check HIT
-            gt_items = set(seq[-3:]) if len(seq) > 3 else set()
-
+            gt_items = set(seq[-3:]) if len(seq) > 3 and not st.session_state.show_warning else set()
             st.markdown("---")
-            st.markdown(f"### 🎯 Top-10 Sản phẩm được gợi ý")
+            st.markdown("### 🎯 Top-10 Sản phẩm được gợi ý")
             cols = st.columns(5)
             for i, rec in enumerate(results[:10]):
                 with cols[i % 5]:
-                    img_url  = get_item_image_url(rec.item_id, M["item_cat_map"])
+                    img_url = get_item_image_url(rec.item_id, M["item_cat_map"])
                     category = get_item_category(rec.item_id, M["item_cat_map"])
-                    is_hit   = rec.item_id in gt_items
+                    is_hit = rec.item_id in gt_items
                     ev_emoji = get_event_emoji(rec.top_event)
-
-                    hit_badge  = '<span class="hit-badge">🎯 HIT</span>'  if is_hit         else ""
-                    seen_badge = '<span class="seen-badge">✅ seen</span>' if rec.seen_before else ""
-
-                    st.markdown(f"""
-                    <div class="item-card">
-                        {hit_badge}{seen_badge}
-                        <img src="{img_url}" loading="lazy" alt="{category}"/>
-                        <div class="item-id">#{rec.item_id}</div>
-                        <div class="item-cat">{category}</div>
-                        <div class="item-pop">{ev_emoji} {rec.popularity:,} events</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    # Nếu logged in → cho phép click để lưu interaction
+                    st.image(img_url, use_container_width=True)
+                    badge = "🎯 **HIT**  " if is_hit else ""
+                    seen = "✅ seen" if rec.seen_before else ""
+                    st.markdown(f"{badge}{seen}")
+                    st.markdown(f"**#{rec.item_id}**")
+                    st.markdown(f"🏷️ `{category}`")
+                    st.caption(f"{ev_emoji} {rec.popularity:,} events")
                     if st.session_state.logged_in:
                         if st.button(f"👁 View", key=f"view_{rec.item_id}_{i}", use_container_width=True):
                             save_interaction(st.session_state.user_id, rec.item_id, "view")
                             st.toast(f"✅ Đã lưu: Item #{rec.item_id}")
-
-            # Stats
             if gt_items:
                 rec_ids = {r.item_id for r in results}
-                hits    = len(rec_ids & gt_items)
+                hits = len(rec_ids & gt_items)
                 st.success(f"**Hit Rate: {hits}/3 ground truth items found in top-10 ({hits/3*100:.0f}%)**")
         else:
             st.info("Không có kết quả. Thử user ID khác.")
 
 
-# ────────────────────────────────────────────────────────────────────
-# TAB 2: MODEL METRICS
-# ────────────────────────────────────────────────────────────────────
 with tab2:
     st.markdown("## 📊 Hiệu suất ALS V1")
     st.caption("Đánh giá trên **test set** (11,104 users, sample 2,000) | n_ground_truth = 3")
-
-    # Metrics từ ALS V1 evaluation (Cell 10 trong notebook)
-    metrics = {
-        "HR@10"     : 0.5690,
-        "Recall@10" : 0.3048,
-        "NDCG@10"   : 0.2333,
-        "MRR@10"    : 0.2925,
-    }
-
+    metrics = {"HR@10": 0.5690, "Recall@10": 0.3048, "NDCG@10": 0.2333, "MRR@10": 0.2925}
     col1, col2, col3, col4 = st.columns(4)
     for col, (metric, value) in zip([col1, col2, col3, col4], metrics.items()):
         with col:
@@ -468,34 +406,21 @@ with tab2:
         """)
 
 
-# ────────────────────────────────────────────────────────────────────
-# TAB 3: COLD START
-# ────────────────────────────────────────────────────────────────────
 with tab3:
     st.markdown("## ❄️ Cold Start — Trending Items")
     st.caption("Dùng cho users mới chưa có lịch sử tương tác")
-
-    trending = get_cold_start_recommendations(
-        M["cold_start_data"], M["item_popularity"], M["item_event_type"], top_k=10
-    )
-
+    trending = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"], top_k=10)
     if trending:
         cols = st.columns(5)
-        for i, rec in enumerate(trending):
+        for i, rec in enumerate(trending[:10]):
             with cols[i % 5]:
-                img_url  = get_item_image_url(rec.item_id, M["item_cat_map"])
+                img_url = get_item_image_url(rec.item_id, M["item_cat_map"])
                 category = get_item_category(rec.item_id, M["item_cat_map"])
                 ev_emoji = get_event_emoji(rec.top_event)
-
-                st.markdown(f"""
-                <div class="item-card">
-                    <img src="{img_url}" loading="lazy" alt="{category}"/>
-                    <div class="item-id">#{rec.item_id}</div>
-                    <div class="item-cat">{category}</div>
-                    <div class="item-pop">{ev_emoji} {rec.popularity:,} events</div>
-                </div>
-                """, unsafe_allow_html=True)
-
+                st.image(img_url, use_container_width=True)
+                st.markdown(f"**#{rec.item_id}**")
+                st.markdown(f"🏷️ `{category}`")
+                st.caption(f"{ev_emoji} {rec.popularity:,} events")
                 if st.session_state.logged_in:
                     if st.button(f"👁 View", key=f"cold_{rec.item_id}_{i}", use_container_width=True):
                         save_interaction(st.session_state.user_id, rec.item_id, "view")
