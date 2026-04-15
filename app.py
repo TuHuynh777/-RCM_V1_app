@@ -277,7 +277,7 @@ with tab1:
         # Chỉ lấy users có embedding thật trong user_factors
         valid_df = M["test_df"][
             M["test_df"]["visitorid"].map(
-                lambda v: 0 <= M["user2idx"].get(v, -1) < max_u
+                lambda v: M["user2idx"].get(v, -1) >= 0   # bỏ max_u đi
             )
         ]
         if valid_df.empty:
@@ -355,7 +355,7 @@ with tab1:
                         st.caption(f"🎯 Ground Truth (3 items tiếp theo): {gt}")
 
                 u_idx = M["user2idx"].get(target_user_id, -1)
-                if u_idx < 0 or u_idx >= M["als_model"].user_factors.shape[0]:
+                if u_idx < 0 or u_idx >= len(M["user2idx"]):
                     st.warning("⚠️ User ID không hợp lệ hoặc ngoài phạm vi model. Hiển thị trending thay thế.")
                     results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
                     st.session_state.show_warning = True
