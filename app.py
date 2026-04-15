@@ -5,8 +5,8 @@ Streamlit App với Supabase Auth + Interaction Tracking
 import streamlit as st
 import numpy as np
 import os
-
-from utils.model_loader import load_als_artifacts, load_cold_start, load_events_metadata, load_test_df
+import scipy.sparse as sp
+from utils.model_loader import load_als_artifacts, load_cold_start, load_events_metadata, load_test_df, MODEL_DIR, DATA_DIR, ALS_MODEL_FILE, USER_ITEM_FILE, MAPPINGS_FILE, IS_CLOUD
 from utils.recommender import recommend_existing_user, recommend_new_user, get_cold_start_recommendations
 from utils.image_utils import load_item_category_map, get_item_category, get_item_image_url, get_event_emoji
 from utils.supabase_client import register, login, logout, save_interaction, get_user_interactions
@@ -206,6 +206,42 @@ with st.sidebar:
     - Factors: 128 · Alpha: 100
     - 1.4M users · 235K items
     """)
+
+with st.sidebar.expander("🔧 DEBUG INFO", expanded=True):
+
+    # ── NHÁNH 1: PATH ─────────────────────────────────────────────
+    st.markdown("**📁 PATH**")
+    als_path    = os.path.join(MODEL_DIR, ALS_MODEL_FILE)
+    matrix_path = os.path.join(MODEL_DIR, USER_ITEM_FILE)
+    map_path    = os.path.join(DATA_DIR,  MAPPINGS_FILE)
+
+    st.caption(f"`als_path` exists: {os.path.exists(als_path)}")
+    st.caption(f"`matrix_path` exists: {os.path.exists(matrix_path)}")
+    st.caption(f"`map_path` exists: {os.path.exists(map_path)}")
+    if os.path.exists(als_path):
+        size_mb = os.path.getsize(als_path) / (1024 * 1024)
+        st.caption(f"File size: {size_mb:.1f} MB")
+    st.caption(f"CWD: `{os.getcwd()}`")
+    st.caption(f"IS_CLOUD: {IS_CLOUD}")
+
+    st.divider()
+
+    # ── NHÁNH 2: PICKLE OBJECT — dùng M đã load sẵn, không gọi lại ──
+    st.markdown("**🧠 MODEL OBJECT**")
+    st.caption(f"type: `{type(M['als_model']).__name__}`")
+    st.caption(f"user_factors.shape: `{M['als_model'].user_factors.shape}`")
+    st.caption(f"item_factors.shape: `{M['als_model'].item_factors.shape}`")
+    st.caption(f"user_item_matrix shape: `{M['user_item_matrix'].shape}`")
+    st.caption(f"user2idx size: `{len(M['user2idx'])}`")
+    st.caption(f"item2idx size: `{len(M['item2idx'])}`")
+
+    st.divider()
+
+    # ── NHÁNH 3: CACHE CHECK ──────────────────────────────────────
+    st.markdown("**⚡ CACHE**")
+    if st.button("🗑️ Clear Cache & Reload"):
+        st.cache_resource.clear()
+        st.rerun()
 
 
 tab1, tab2, tab3 = st.tabs(["🔍 Gợi ý sản phẩm", "📊 Hiệu suất Model", "❄️ Cold Start"])
