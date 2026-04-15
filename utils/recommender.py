@@ -43,8 +43,9 @@ def recommend_existing_user(
     ids, scores = als_model.recommend(
         userid               = u_idx,
         user_items           = user_item_matrix[u_idx],
-        N                    = top_k,
+        N                    = top_k + 50,
         filter_already_liked_items = False,
+        recalculate_user=True 
     )
     results = []
     for item_idx, score in zip(ids.tolist(), scores.tolist()):
