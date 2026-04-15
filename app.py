@@ -374,8 +374,9 @@ with tab1:
                             top_k=10,
                         )
                         st.session_state.show_warning = False
-                    except Exception:
-                        st.warning("⚠️ Không thể recommend cho user này. Hiển thị trending thay thế.")
+                    except Exception as e:
+                        # ← ĐỔI để thấy lỗi thật thay vì bị nuốt
+                        st.error(f"❌ LỖI RECOMMEND: {type(e).__name__}: {e}")
                         results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
                         st.session_state.show_warning = True
 
