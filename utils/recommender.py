@@ -36,9 +36,7 @@ def recommend_existing_user(
     if user_id not in user2idx:
         return []
     u_idx = user2idx[user_id]
-    # Safety net: user có trong mapping nhưng không có embedding
-    if u_idx >= als_model.user_factors.shape[0]:
-        return []  # caller sẽ fallback trending
+    
     
     ids, scores = als_model.recommend(
         userid               = u_idx,
