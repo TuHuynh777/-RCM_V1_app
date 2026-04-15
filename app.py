@@ -147,10 +147,6 @@ with st.sidebar:
     st.markdown("**ALS Recommender · V1**")
     st.divider()
 
-    st.caption(f"user_factors shape: {M['als_model'].user_factors.shape[0]}")
-    st.caption(f"user2idx size: {len(M['user2idx'])}")
-    st.caption(f"test_df size: {len(M['test_df'])}")
-
     if st.session_state.logged_in:
         st.success(f"👋 Xin chào, **{st.session_state.username}**!")
         st.caption(f"User ID: `{st.session_state.user_id[:8]}...`")
@@ -207,41 +203,6 @@ with st.sidebar:
     - 1.4M users · 235K items
     """)
 
-with st.sidebar.expander("🔧 DEBUG INFO", expanded=True):
-
-    # ── NHÁNH 1: PATH ─────────────────────────────────────────────
-    st.markdown("**📁 PATH**")
-    als_path    = os.path.join(MODEL_DIR, ALS_MODEL_FILE)
-    matrix_path = os.path.join(MODEL_DIR, USER_ITEM_FILE)
-    map_path    = os.path.join(DATA_DIR,  MAPPINGS_FILE)
-
-    st.caption(f"`als_path` exists: {os.path.exists(als_path)}")
-    st.caption(f"`matrix_path` exists: {os.path.exists(matrix_path)}")
-    st.caption(f"`map_path` exists: {os.path.exists(map_path)}")
-    if os.path.exists(als_path):
-        size_mb = os.path.getsize(als_path) / (1024 * 1024)
-        st.caption(f"File size: {size_mb:.1f} MB")
-    st.caption(f"CWD: `{os.getcwd()}`")
-    st.caption(f"IS_CLOUD: {IS_CLOUD}")
-
-    st.divider()
-
-    # ── NHÁNH 2: PICKLE OBJECT — dùng M đã load sẵn, không gọi lại ──
-    st.markdown("**🧠 MODEL OBJECT**")
-    st.caption(f"type: `{type(M['als_model']).__name__}`")
-    st.caption(f"user_factors.shape: `{M['als_model'].user_factors.shape}`")
-    st.caption(f"item_factors.shape: `{M['als_model'].item_factors.shape}`")
-    st.caption(f"user_item_matrix shape: `{M['user_item_matrix'].shape}`")
-    st.caption(f"user2idx size: `{len(M['user2idx'])}`")
-    st.caption(f"item2idx size: `{len(M['item2idx'])}`")
-
-    st.divider()
-
-    # ── NHÁNH 3: CACHE CHECK ──────────────────────────────────────
-    st.markdown("**⚡ CACHE**")
-    if st.button("🗑️ Clear Cache & Reload"):
-        st.cache_resource.clear()
-        st.rerun()
 
 
 tab1, tab2, tab3 = st.tabs(["🔍 Gợi ý sản phẩm", "📊 Hiệu suất Model", "❄️ Cold Start"])
