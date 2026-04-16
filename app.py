@@ -165,7 +165,7 @@ with st.sidebar:
 
     if st.session_state.logged_in:
         st.success(f"👋 Xin chào, **{st.session_state.username}**!")
-        st.caption(f"User ID: `{st.session_state.user_id[:8]}...`")
+        st.markdown(f"<small style='color:#b0c4de;'>User ID: <code style='color:#e8f0fe;background:rgba(255,255,255,0.1);padding:1px 4px;border-radius:3px'>{st.session_state.user_id[:8]}...</code></small>", unsafe_allow_html=True)
         if st.button("🚪 Đăng xuất", use_container_width=True):
             logout()
             st.session_state.logged_in = False
@@ -216,7 +216,7 @@ with st.sidebar:
 
 
 
-tab1, tab2, tab3 = st.tabs(["🔍 Gợi ý sản phẩm", "📊 Hiệu suất Model", "❄️ Cold Start"])
+tab1, tab2, tab3, tab4 = st.tabs(["🔍 Gợi ý sản phẩm", "📊 Hiệu suất Model", "❄️ Cold Start", "📦 Lịch sử của tôi"])
 
 
 with tab1:
@@ -499,3 +499,22 @@ with tab3:
     **trending items** — được tính từ tần suất xuất hiện trong toàn bộ events dataset.
     Items có tần suất cao nhất = được nhiều người tương tác nhất = likely appealing to new users.
     """)
+
+with tab4:
+    if not st.session_state.logged_in:
+        st.info("🔒 Vui lòng đăng nhập để xem lịch sử.")
+    else:
+        st.markdown(f"## 📦 Lịch sử tương tác của **{st.session_state.username}**")
+        full_history = get_user_interactions(st.session_state.user_id, limit=50)
+        if full_history:
+            st.caption(f"Tổng cộng {len(full_history)} interactions")
+            cols = st.columns(5)
+            for i, item_id in enumerate(reversed(full_history)):  # mới nhất lên trên
+                with cols[i % 5]:
+                    img_url = get_item_image_url(item_id, M["item_cat_map"])
+                    category = get_item_category(item_id, M["item_cat_map"])
+                    st.image(img_url, use_container_width=True)
+                    st.markdown(f"**#{item_id}**")
+                    st.markdown(f"🏷️ `{category}`")
+        else:
+            st.info("Chưa có lịch sử. Hãy vào tab Cold Start và bấm View!")
