@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from utils.model_loader import load_als_artifacts, load_cold_start, load_events_metadata, load_test_df, MODEL_DIR, DATA_DIR, ALS_MODEL_FILE, USER_ITEM_FILE, MAPPINGS_FILE, IS_CLOUD
 from utils.recommender import recommend_existing_user, recommend_new_user, get_cold_start_recommendations
 from utils.image_utils import load_item_category_map, get_item_category, get_item_image_url, get_event_emoji
-from utils.supabase_client import register, login, logout, save_interaction, get_user_interactions, get_user_interactions_full, delete_user_interactions
+from utils.supabase_client import register, login, logout, save_interaction, get_user_interactions_full, delete_user_interactions
 
 
 st.set_page_config(
