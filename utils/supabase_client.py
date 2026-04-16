@@ -96,3 +96,23 @@ def get_user_interactions(user_id: str, limit: int = 50) -> list[int]:
         return [row["item_id"] for row in res.data]
     except Exception as e:
         return []
+
+def get_user_interactions_full(user_id: str, limit: int = 50) -> list[dict]:
+    """
+    Load lịch sử đầy đủ: item_id + event_type + created_at
+    Dùng cho Timeline tab4 và recommend với weight
+    Returns: [{"item_id": int, "event_type": str, "created_at": str}, ...]
+    """
+    sb = get_supabase()
+    try:
+        res = (
+            sb.table("interactions")
+            .select("item_id, event_type, created_at")
+            .eq("user_id", user_id)
+            .order("created_at", desc=False)
+            .limit(limit)
+            .execute()
+        )
+        return res.data  # trả về list[dict] đầy đủ
+    except Exception as e:
+        return []

@@ -294,9 +294,20 @@ with tab1:
                     st.markdown(f"**#{rec.item_id}**")
                     st.markdown(f"🏷️ `{category}`")
                     st.caption(f"{ev_emoji} {rec.popularity:,} events")
-                    if st.button(f"👁 View", key=f"forme_{rec.item_id}_{i}", use_container_width=True):
-                        save_interaction(st.session_state.user_id, rec.item_id, "view")
-                        st.toast(f"✅ Đã lưu: Item #{rec.item_id}")
+                    if st.session_state.logged_in:
+                        b1, b2, b3 = st.columns(3)
+                        with b1:
+                            if st.button("👁", key=f"forme_view_{rec.item_id}_{i}", use_container_width=True, help="View"):
+                                save_interaction(st.session_state.user_id, rec.item_id, "view")
+                                st.toast(f"👁 Viewed #{rec.item_id}")
+                        with b2:
+                            if st.button("🛒", key=f"forme_cart_{rec.item_id}_{i}", use_container_width=True, help="Add to cart (×3)"):
+                                save_interaction(st.session_state.user_id, rec.item_id, "cart")
+                                st.toast(f"🛒 Cart #{rec.item_id}")
+                        with b3:
+                            if st.button("💳", key=f"forme_buy_{rec.item_id}_{i}", use_container_width=True, help="Buy (×10)"):
+                                save_interaction(st.session_state.user_id, rec.item_id, "buy")
+                                st.toast(f"💳 Bought #{rec.item_id}")
         else:
             st.warning("⚠️ Bạn chưa có lịch sử! Hãy vào tab **Cold Start** và bấm View vài sản phẩm trước.")
 
@@ -409,9 +420,19 @@ with tab1:
                     st.markdown(f"🏷️ `{category}`")
                     st.caption(f"{ev_emoji} {rec.popularity:,} events")
                     if st.session_state.logged_in:
-                        if st.button(f"👁 View", key=f"view_{rec.item_id}_{i}", use_container_width=True):
-                            save_interaction(st.session_state.user_id, rec.item_id, "view")
-                            st.toast(f"✅ Đã lưu: Item #{rec.item_id}")
+                        b1, b2, b3 = st.columns(3)
+                        with b1:
+                            if st.button("👁", key=f"view_{rec.item_id}_{i}", use_container_width=True, help="View"):
+                                save_interaction(st.session_state.user_id, rec.item_id, "view")
+                                st.toast(f"👁 Viewed #{rec.item_id}")
+                        with b2:
+                            if st.button("🛒", key=f"cart_{rec.item_id}_{i}", use_container_width=True, help="Add to cart (×3)"):
+                                save_interaction(st.session_state.user_id, rec.item_id, "cart")
+                                st.toast(f"🛒 Added to cart #{rec.item_id}")
+                        with b3:
+                            if st.button("💳", key=f"buy_{rec.item_id}_{i}", use_container_width=True, help="Buy (×10)"):
+                                save_interaction(st.session_state.user_id, rec.item_id, "buy")
+                                st.toast(f"💳 Bought #{rec.item_id}")
             if gt_items:
                 rec_ids = {r.item_id for r in results}
                 hits = len(rec_ids & gt_items)
@@ -543,11 +564,20 @@ with tab3:
                 st.markdown(f"🏷️ `{category}`")
                 st.caption(f"{ev_emoji} {rec.popularity:,} events")
                 if st.session_state.logged_in:
-                    # Key thêm seed để tránh DuplicateWidgetID khi random đổi items
-                    btn_key = f"cold_{rec.item_id}_{i}_{st.session_state['cold_random_seed']}"
-                    if st.button("👁 View", key=btn_key, use_container_width=True):
-                        save_interaction(st.session_state.user_id, rec.item_id, "view")
-                        st.toast(f"✅ Đã lưu: Item #{rec.item_id}")
+                    b1, b2, b3 = st.columns(3)
+                    seed = st.session_state['cold_random_seed']
+                    with b1:
+                        if st.button("👁", key=f"cold_view_{rec.item_id}_{i}_{seed}", use_container_width=True, help="View"):
+                            save_interaction(st.session_state.user_id, rec.item_id, "view")
+                            st.toast(f"👁 Viewed #{rec.item_id}")
+                    with b2:
+                        if st.button("🛒", key=f"cold_cart_{rec.item_id}_{i}_{seed}", use_container_width=True, help="Add to cart (×3)"):
+                            save_interaction(st.session_state.user_id, rec.item_id, "cart")
+                            st.toast(f"🛒 Cart #{rec.item_id}")
+                    with b3:
+                        if st.button("💳", key=f"cold_buy_{rec.item_id}_{i}_{seed}", use_container_width=True, help="Buy (×10)"):
+                            save_interaction(st.session_state.user_id, rec.item_id, "buy")
+                            st.toast(f"💳 Bought #{rec.item_id}")
     else:
         st.info(f"Không có sản phẩm nào trong danh mục **{selected_cat}**. Thử chọn danh mục khác!")
 
