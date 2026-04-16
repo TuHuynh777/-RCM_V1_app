@@ -5,10 +5,11 @@ Streamlit App với Supabase Auth + Interaction Tracking
 import streamlit as st
 import random
 import numpy as np
+from datetime import datetime, timezone
 from utils.model_loader import load_als_artifacts, load_cold_start, load_events_metadata, load_test_df, MODEL_DIR, DATA_DIR, ALS_MODEL_FILE, USER_ITEM_FILE, MAPPINGS_FILE, IS_CLOUD
 from utils.recommender import recommend_existing_user, recommend_new_user, get_cold_start_recommendations
 from utils.image_utils import load_item_category_map, get_item_category, get_item_image_url, get_event_emoji
-from utils.supabase_client import register, login, logout, save_interaction, get_user_interactions
+from utils.supabase_client import register, login, logout, save_interaction, get_user_interactions, get_user_interactions_full
 
 
 st.set_page_config(
@@ -176,11 +177,17 @@ with st.sidebar:
             st.rerun()
         st.divider()
         st.markdown("**📦 Lịch sử mua sắm của bạn**")
-        history = get_user_interactions(st.session_state.user_id, limit=10)
-        if history:
-            for item_id in history[-5:]:
-                cat = get_item_category(item_id, M["item_cat_map"])
-                st.markdown(f'<span class="history-chip">#{item_id} · {cat}</span>', unsafe_allow_html=True)
+        history_full = get_user_interactions_full(st.session_state.user_id, limit=10)
+        if history_full:
+            for row in history_full[-5:]:
+                item_id    = row["item_id"]
+                event_type = row.get("event_type", "view")
+                cat        = get_item_category(item_id, M["item_cat_map"])
+                ev_emoji   = get_event_emoji(event_type)
+                st.markdown(
+                    f'<span class="history-chip">{ev_emoji} #{item_id} · {cat}</span>',
+                    unsafe_allow_html=True
+                )
         else:
             st.caption("Chưa có lịch sử. Hãy click vào sản phẩm!")
     else:
@@ -593,16 +600,66 @@ with tab4:
         st.info("🔒 Vui lòng đăng nhập để xem lịch sử.")
     else:
         st.markdown(f"## 📦 Lịch sử tương tác của **{st.session_state.username}**")
-        full_history = get_user_interactions(st.session_state.user_id, limit=50)
-        if full_history:
-            st.caption(f"Tổng cộng {len(full_history)} interactions")
-            cols = st.columns(5)
-            for i, item_id in enumerate(reversed(full_history)):  # mới nhất lên trên
-                with cols[i % 5]:
-                    img_url = get_item_image_url(item_id, M["item_cat_map"])
-                    category = get_item_category(item_id, M["item_cat_map"])
-                    st.image(img_url, use_container_width=True)
-                    st.markdown(f"**#{item_id}**")
-                    st.markdown(f"🏷️ `{category}`")
-        else:
+        full_history = get_user_interactions_full(st.session_state.user_id, limit=50)
+
+        if not full_history:
             st.info("Chưa có lịch sử. Hãy vào tab Cold Start và bấm View!")
+        else:
+            # ── Thống kê nhanh ──
+            total    = len(full_history)
+            n_view   = sum(1 for r in full_history if r.get("event_type") == "view")
+            n_cart   = sum(1 for r in full_history if r.get("event_type") == "cart")
+            n_buy    = sum(1 for r in full_history if r.get("event_type") == "buy")
+
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("📦 Tổng", total)
+            c2.metric("👁 Views", n_view)
+            c3.metric("🛒 Carts", n_cart)
+            c4.metric("💳 Buys", n_buy)
+            st.divider()
+
+            # ── Timeline — mới nhất lên trên ──
+            st.markdown("### 🕐 Timeline")
+            EVENT_STYLE = {
+                "view": ("👁 View",  "#e3f2fd", "#1565c0"),
+                "cart": ("🛒 Cart",  "#fff8e1", "#f57f17"),
+                "buy":  ("💳 Buy",   "#e8f5e9", "#2e7d32"),
+            }
+            for row in reversed(full_history):
+                item_id    = row["item_id"]
+                event_type = row.get("event_type", "view")
+                created_at = row.get("created_at", "")
+                category   = get_item_category(item_id, M["item_cat_map"])
+
+                label, bg_color, text_color = EVENT_STYLE.get(
+                    event_type, ("👁 View", "#e3f2fd", "#1565c0")
+                )
+
+                # Format timestamp gọn hơn nếu có
+                time_str = ""
+                if created_at:
+                    try:
+                        dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                        dt_local = dt.astimezone()
+                        time_str = dt_local.strftime("%d/%m/%Y %H:%M")
+                    except:
+                        time_str = created_at[:16]
+
+                st.markdown(f"""
+                <div style="
+                    display:flex; align-items:center; gap:12px;
+                    background:{bg_color}; border-radius:10px;
+                    padding:10px 16px; margin-bottom:8px;
+                    border-left:4px solid {text_color};
+                ">
+                    <span style="font-size:20px">{label.split()[0]}</span>
+                    <div style="flex:1">
+                        <span style="font-weight:700;color:{text_color};">{label}</span>
+                        &nbsp;·&nbsp;
+                        <span style="font-weight:700;">Item #{item_id}</span>
+                        &nbsp;·&nbsp;
+                        <span style="color:#555;">🏷️ {category}</span>
+                    </div>
+                    <span style="font-size:12px;color:#888;">{time_str}</span>
+                </div>
+                """, unsafe_allow_html=True)
