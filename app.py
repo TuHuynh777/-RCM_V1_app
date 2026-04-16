@@ -155,6 +155,10 @@ if "last_results_mode" not in st.session_state: st.session_state.last_results_mo
 if "cat_search_results" not in st.session_state: st.session_state.cat_search_results = []
 if "cat_search_name"    not in st.session_state: st.session_state.cat_search_name    = ""
 if "item_search_result" not in st.session_state: st.session_state.item_search_result = None
+if "rcm_results"   not in st.session_state: st.session_state.rcm_results  = []
+if "rcm_gt_items"  not in st.session_state: st.session_state.rcm_gt_items = set()
+if "rcm_for_me"    not in st.session_state: st.session_state.rcm_for_me   = []
+if "rcm_mode"      not in st.session_state: st.session_state.rcm_mode     = None
 
 with st.sidebar:
     st.markdown("## 🛍️ ShopSense")
@@ -363,7 +367,6 @@ with tab1:
     if btn_for_me and st.session_state.logged_in:
         supabase_history_full = get_user_interactions_full(st.session_state.user_id)
         if supabase_history_full:
-            st.info(f"🎯 Đang gợi ý dựa trên {len(supabase_history_full)} interactions của bạn")
             results_for_me = recommend_new_user(
                 item_history=supabase_history_full,
                 item2idx=M["item2idx"],
@@ -373,33 +376,12 @@ with tab1:
                 item_event_type=M["item_event_type"],
                 top_k=10,
             )
-            st.markdown("### 🎯 Top-10 Gợi ý dành riêng cho bạn")
-            cols = st.columns(5)
-            for i, rec in enumerate(results_for_me[:10]):
-                with cols[i % 5]:
-                    img_url = get_item_image_url(rec.item_id, M["item_cat_map"])
-                    category = get_item_category(rec.item_id, M["item_cat_map"])
-                    ev_emoji = get_event_emoji(rec.top_event)
-                    st.image(img_url, use_container_width=True)
-                    st.markdown(f"**#{rec.item_id}**")
-                    st.markdown(f"🏷️ `{category}`")
-                    st.caption(f"{ev_emoji} {rec.popularity:,} events")
-                    if st.session_state.logged_in:
-                        b1, b2, b3 = st.columns(3)
-                        with b1:
-                            if st.button("👁", key=f"forme_view_{rec.item_id}_{i}", use_container_width=True, help="View"):
-                                save_interaction(st.session_state.user_id, rec.item_id, "view")
-                                st.toast(f"👁 Viewed #{rec.item_id}")
-                        with b2:
-                            if st.button("🛒", key=f"forme_cart_{rec.item_id}_{i}", use_container_width=True, help="Add to cart (×3)"):
-                                save_interaction(st.session_state.user_id, rec.item_id, "cart")
-                                st.toast(f"🛒 Cart #{rec.item_id}")
-                        with b3:
-                            if st.button("💳", key=f"forme_buy_{rec.item_id}_{i}", use_container_width=True, help="Buy (×10)"):
-                                save_interaction(st.session_state.user_id, rec.item_id, "buy")
-                                st.toast(f"💳 Bought #{rec.item_id}")
-        else:
-            st.warning("⚠️ Bạn chưa có lịch sử! Hãy vào tab **Cold Start** và bấm View vài sản phẩm trước.")
+            st.session_state.rcm_for_me  = results_for_me
+            st.session_state.rcm_mode    = "forme"
+            st.session_state.rcm_results = []           # clear main results
+    else:
+        st.warning("⚠️ Bạn chưa có lịch sử! Hãy vào tab **Cold Start** và bấm View vài sản phẩm trước.")
+        st.session_state.rcm_for_me = []
 
         
     target_user_id = None
@@ -413,6 +395,9 @@ with tab1:
     if btn_recommend or target_user_id is not None:
         if target_user_id is None:
             target_user_id = int(user_input_id)
+
+        results = []
+        gt_items = set()
 
         if use_logged_history and st.session_state.logged_in:
             supabase_history_full = get_user_interactions_full(st.session_state.user_id)
@@ -430,18 +415,15 @@ with tab1:
                 st.markdown("**Lịch sử của bạn** (5 gần nhất):")
                 chips = "".join([
                     f'<span class="history-chip">#{r["item_id"]} · {get_item_category(r["item_id"], M["item_cat_map"])}</span>'
-                    for r in supabase_history_full[-5:]  
+                    for r in supabase_history_full[-5:]
                 ])
                 st.markdown(chips, unsafe_allow_html=True)
             else:
                 st.warning("Bạn chưa có lịch sử. Hãy click vào sản phẩm để build history!")
-                results = []
-                seq = []
         else:
             if target_user_id not in M["user2idx"]:
                 st.warning("⚠️ User ID này không có trong dataset. Hiển thị trending thay thế.")
                 results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
-                seq = []
                 st.session_state.show_warning = True
             else:
                 if not seq and M["test_df"] is not None:
@@ -456,7 +438,8 @@ with tab1:
                     n_show = min(5, len(history_raw))
                     st.markdown(f"**📜 Lịch sử user `{target_user_id}`** ({len(history_raw)} items, {n_show} cuối):")
                     chips = "".join([
-                        f'<span class="history-chip">#{i} · {get_item_category(i, M["item_cat_map"])}</span>'  for i in history_raw[-5:]
+                        f'<span class="history-chip">#{i} · {get_item_category(i, M["item_cat_map"])}</span>'
+                        for i in history_raw[-5:]
                     ])
                     st.markdown(chips, unsafe_allow_html=True)
                     with st.expander(f"📋 Xem đầy đủ sequence ({len(history_raw)} items)"):
@@ -486,50 +469,87 @@ with tab1:
                             top_k=10,
                         )
                         st.session_state.show_warning = False
+                        gt_items = set(seq[-3:]) if len(seq) > 3 else set()
                     except Exception as e:
-                        # ← ĐỔI để thấy lỗi thật thay vì bị nuốt
                         st.error(f"❌ LỖI RECOMMEND: {type(e).__name__}: {e}")
                         results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
                         st.session_state.show_warning = True
 
-        if results:
-            gt_items = set(seq[-3:]) if len(seq) > 3 and not st.session_state.show_warning else set()
-            st.markdown("---")
-            st.markdown("### 🎯 Top-10 Sản phẩm được gợi ý")
-            cols = st.columns(5)
-            for i, rec in enumerate(results[:10]):
-                with cols[i % 5]:
-                    img_url = get_item_image_url(rec.item_id, M["item_cat_map"])
-                    category = get_item_category(rec.item_id, M["item_cat_map"])
-                    is_hit = rec.item_id in gt_items
-                    ev_emoji = get_event_emoji(rec.top_event)
-                    st.image(img_url, use_container_width=True)
-                    badge = "🎯 **HIT**  " if is_hit else ""
-                    seen = "✅ seen" if rec.seen_before else ""
-                    st.markdown(f"{badge}{seen}")
-                    st.markdown(f"**#{rec.item_id}**")
-                    st.markdown(f"🏷️ `{category}`")
-                    st.caption(f"{ev_emoji} {rec.popularity:,} events")
-                    if st.session_state.logged_in:
-                        b1, b2, b3 = st.columns(3)
-                        with b1:
-                            if st.button("👁", key=f"view_{rec.item_id}_{i}", use_container_width=True, help="View"):
-                                save_interaction(st.session_state.user_id, rec.item_id, "view")
-                                st.toast(f"👁 Viewed #{rec.item_id}")
-                        with b2:
-                            if st.button("🛒", key=f"cart_{rec.item_id}_{i}", use_container_width=True, help="Add to cart (×3)"):
-                                save_interaction(st.session_state.user_id, rec.item_id, "cart")
-                                st.toast(f"🛒 Added to cart #{rec.item_id}")
-                        with b3:
-                            if st.button("💳", key=f"buy_{rec.item_id}_{i}", use_container_width=True, help="Buy (×10)"):
-                                save_interaction(st.session_state.user_id, rec.item_id, "buy")
-                                st.toast(f"💳 Bought #{rec.item_id}")
-            if gt_items:
-                rec_ids = {r.item_id for r in results}
-                hits = len(rec_ids & gt_items)
-                st.success(f"**Hit Rate: {hits}/3 ground truth items found in top-10 ({hits/3*100:.0f}%)**")
-        else:
-            st.info("Không có kết quả. Thử user ID khác.")
+        # ── Save vào session_state thay vì render trực tiếp ──
+        st.session_state.rcm_results  = results
+        st.session_state.rcm_gt_items = gt_items
+        st.session_state.rcm_mode     = "main"
+        st.session_state.rcm_for_me   = []          # clear for_me results
+
+    # ════════════════════════════════════════════════════
+    # RENDER ZONE — luôn chạy, đọc từ session_state
+    # ════════════════════════════════════════════════════
+
+    # Render "Recommend for me"
+    if st.session_state.rcm_mode == "forme" and st.session_state.rcm_for_me:
+        st.markdown("### 🎯 Top-10 Gợi ý dành riêng cho bạn")
+        cols = st.columns(5)
+        for i, rec in enumerate(st.session_state.rcm_for_me[:10]):
+            with cols[i % 5]:
+                img_url  = get_item_image_url(rec.item_id, M["item_cat_map"])
+                category = get_item_category(rec.item_id, M["item_cat_map"])
+                ev_emoji = get_event_emoji(rec.top_event)
+                st.image(img_url, use_container_width=True)
+                st.markdown(f"**#{rec.item_id}**")
+                st.markdown(f"🏷️ `{category}`")
+                st.caption(f"{ev_emoji} {rec.popularity:,} events")
+                if st.session_state.logged_in:
+                    b1, b2, b3 = st.columns(3)
+                    with b1:
+                        if st.button("👁", key=f"forme_view_{rec.item_id}_{i}", use_container_width=True, help="View"):
+                            save_interaction(st.session_state.user_id, rec.item_id, "view")
+                            st.toast("✅ Viewed")
+                    with b2:
+                        if st.button("🛒", key=f"forme_cart_{rec.item_id}_{i}", use_container_width=True, help="Add to cart (×3)"):
+                            save_interaction(st.session_state.user_id, rec.item_id, "cart")
+                            st.toast("✅ Added to Cart")
+                    with b3:
+                        if st.button("💳", key=f"forme_buy_{rec.item_id}_{i}", use_container_width=True, help="Buy (×10)"):
+                            save_interaction(st.session_state.user_id, rec.item_id, "buy")
+                            st.toast("✅ Bought")
+
+    # Render "Recommend / Random user"
+    elif st.session_state.rcm_mode == "main" and st.session_state.rcm_results:
+        gt_items = st.session_state.rcm_gt_items
+        st.markdown("---")
+        st.markdown("### 🎯 Top-10 Sản phẩm được gợi ý")
+        cols = st.columns(5)
+        for i, rec in enumerate(st.session_state.rcm_results[:10]):
+            with cols[i % 5]:
+                img_url  = get_item_image_url(rec.item_id, M["item_cat_map"])
+                category = get_item_category(rec.item_id, M["item_cat_map"])
+                is_hit   = rec.item_id in gt_items
+                ev_emoji = get_event_emoji(rec.top_event)
+                st.image(img_url, use_container_width=True)
+                badge = "🎯 **HIT**  " if is_hit else ""
+                seen  = "✅ seen" if rec.seen_before else ""
+                st.markdown(f"{badge}{seen}")
+                st.markdown(f"**#{rec.item_id}**")
+                st.markdown(f"🏷️ `{category}`")
+                st.caption(f"{ev_emoji} {rec.popularity:,} events")
+                if st.session_state.logged_in:
+                    b1, b2, b3 = st.columns(3)
+                    with b1:
+                        if st.button("👁", key=f"view_{rec.item_id}_{i}", use_container_width=True, help="View"):
+                            save_interaction(st.session_state.user_id, rec.item_id, "view")
+                            st.toast("✅ Viewed")
+                    with b2:
+                        if st.button("🛒", key=f"cart_{rec.item_id}_{i}", use_container_width=True, help="Add to cart (×3)"):
+                            save_interaction(st.session_state.user_id, rec.item_id, "cart")
+                            st.toast("✅ Added to Cart")
+                    with b3:
+                        if st.button("💳", key=f"buy_{rec.item_id}_{i}", use_container_width=True, help="Buy (×10)"):
+                            save_interaction(st.session_state.user_id, rec.item_id, "buy")
+                            st.toast("✅ Bought")
+        if gt_items:
+            rec_ids = {r.item_id for r in st.session_state.rcm_results}
+            hits = len(rec_ids & gt_items)
+            st.success(f"**Hit Rate: {hits}/3 ground truth items found in top-10 ({hits/3*100:.0f}%)**")
 
 
 with tab2:
