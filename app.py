@@ -152,7 +152,9 @@ if "username" not in st.session_state: st.session_state.username = None
 if "auth_tab" not in st.session_state: st.session_state.auth_tab = "login"
 if "show_warning" not in st.session_state: st.session_state.show_warning = False
 if "last_results_mode" not in st.session_state: st.session_state.last_results_mode = None
-
+if "cat_search_results" not in st.session_state: st.session_state.cat_search_results = []
+if "cat_search_name"    not in st.session_state: st.session_state.cat_search_name    = ""
+if "item_search_result" not in st.session_state: st.session_state.item_search_result = None
 
 with st.sidebar:
     st.markdown("## 🛍️ ShopSense")
@@ -235,12 +237,24 @@ with tab1:
             btn_search_cat = st.button("Tìm theo Category", key="btn_search_cat", use_container_width=True)
 
         # ── Kết quả search theo Item ID ──
-        if btn_search_item and search_item_id > 0:
-            if search_item_id in M["item_cat_map"]:
-                cat    = get_item_category(search_item_id, M["item_cat_map"])
-                img    = get_item_image_url(search_item_id, M["item_cat_map"])
-                pop    = M["item_popularity"].get(search_item_id, 0)
-                ev     = get_event_emoji(M["item_event_type"].get(search_item_id, "view"))
+        if btn_search_item:              
+            if search_item_id > 0:
+                if search_item_id in M["item_cat_map"]:
+                    st.session_state.item_search_result = search_item_id
+                else:
+                    st.session_state.item_search_result = -1
+            else:
+                st.session_state.item_search_result = None  
+
+        if st.session_state.item_search_result is not None:
+            search_item_id = st.session_state.item_search_result
+            if search_item_id == -1:
+                st.warning(f"⚠️ Item không tồn tại trong dataset.")
+            elif search_item_id > 0:
+                cat = get_item_category(search_item_id, M["item_cat_map"])
+                img = get_item_image_url(search_item_id, M["item_cat_map"])
+                pop = M["item_popularity"].get(search_item_id, 0)
+                ev  = get_event_emoji(M["item_event_type"].get(search_item_id, "view"))
                 st.markdown("---")
                 sc1, sc2 = st.columns([1, 3])
                 with sc1:
@@ -265,26 +279,21 @@ with tab1:
                                 st.toast(f"💳 Bought #{search_item_id}")
                     else:
                         st.caption("🔒 Đăng nhập để tương tác")
-            else:
-                st.warning(f"⚠️ Item #{search_item_id} không tồn tại trong dataset.")
+
 
         # ── Kết quả search theo Category ──
         if btn_search_cat and search_cat != "— Chọn category —":
-            cat_items = [
-                iid for iid, cat in M["item_cat_map"].items()
-                if cat == search_cat
-            ]
-            # Sort theo popularity, lấy top 10
-            cat_items_sorted = sorted(
-                cat_items,
-                key=lambda x: M["item_popularity"].get(x, 0),
-                reverse=True
+            cat_items = [iid for iid, c in M["item_cat_map"].items() if c == search_cat]
+            st.session_state.cat_search_results = sorted(
+                cat_items, key=lambda x: M["item_popularity"].get(x, 0), reverse=True
             )[:10]
+            st.session_state.cat_search_name = search_cat
 
-            st.markdown(f"---")
-            st.markdown(f"**🏷️ Top 10 items phổ biến nhất trong `{search_cat}`**")
+        if st.session_state.cat_search_results:
+            st.markdown("---")
+            st.markdown(f"**🏷️ Top 10 items phổ biến nhất trong `{st.session_state.cat_search_name}`**")
             cat_cols = st.columns(5)
-            for ci, iid in enumerate(cat_items_sorted):
+            for ci, iid in enumerate(st.session_state.cat_search_results):
                 with cat_cols[ci % 5]:
                     st.image(get_item_image_url(iid, M["item_cat_map"]), use_container_width=True)
                     st.markdown(f"**#{iid}**")
