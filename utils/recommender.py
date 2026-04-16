@@ -61,7 +61,7 @@ def recommend_existing_user(
 
 
 def recommend_new_user(
-    item_history    : list[int],
+    item_history    : list,
     item2idx        : dict,
     idx2item        : dict,
     als_model,
@@ -76,13 +76,37 @@ def recommend_new_user(
     # Lấy item_factors từ ALS model
     item_factors = als_model.item_factors  # shape (n_items, D)
 
-    # Map item_id → item_idx
-    known_indices = [item2idx[it] for it in item_history if it in item2idx]
+    # ✅ MỚI — weighted average theo event_type
+    EVENT_WEIGHTS = {"view": 1.0, "cart": 3.0, "buy": 10.0}
+
+    weighted_vecs = []
+    weights       = []
+    known_indices = []
+
+    for entry in item_history:
+        # Backward compatible: vẫn chạy nếu truyền list[int]
+        if isinstance(entry, dict):
+            item_id    = entry["item_id"]
+            event_type = entry.get("event_type", "view")
+            weight     = EVENT_WEIGHTS.get(event_type, 1.0)
+        else:
+            item_id = entry
+            weight  = 1.0
+
+        idx = item2idx.get(item_id)
+        if idx is None:
+            continue
+
+        known_indices.append(idx)
+        weighted_vecs.append(item_factors[idx] * weight)
+        weights.append(weight)
+
     if not known_indices:
         return []
 
-    # User vector = average item factors (simple but effective)
-    user_vec = item_factors[known_indices].mean(axis=0)   # (D,)
+    # Weighted average thay vì simple mean
+    user_vec = np.sum(weighted_vecs, axis=0) / np.sum(weights)
+
     # Normalize
     norm = np.linalg.norm(user_vec)
     if norm > 0:

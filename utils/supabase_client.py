@@ -116,3 +116,12 @@ def get_user_interactions_full(user_id: str, limit: int = 50) -> list[dict]:
         return res.data  # trả về list[dict] đầy đủ
     except Exception as e:
         return []
+    
+def delete_user_interactions(user_id: str) -> bool:
+    """Xóa toàn bộ interactions của user"""
+    sb = get_supabase()
+    try:
+        sb.table("interactions").delete().eq("user_id", user_id).execute()
+        return True
+    except Exception as e:
+        return False

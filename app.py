@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from utils.model_loader import load_als_artifacts, load_cold_start, load_events_metadata, load_test_df, MODEL_DIR, DATA_DIR, ALS_MODEL_FILE, USER_ITEM_FILE, MAPPINGS_FILE, IS_CLOUD
 from utils.recommender import recommend_existing_user, recommend_new_user, get_cold_start_recommendations
 from utils.image_utils import load_item_category_map, get_item_category, get_item_image_url, get_event_emoji
-from utils.supabase_client import register, login, logout, save_interaction, get_user_interactions, get_user_interactions_full
+from utils.supabase_client import register, login, logout, save_interaction, get_user_interactions, get_user_interactions_full, delete_user_interactions
 
 
 st.set_page_config(
@@ -352,11 +352,11 @@ with tab1:
         st.rerun()
 
     if btn_for_me and st.session_state.logged_in:
-        supabase_history = get_user_interactions(st.session_state.user_id)
-        if supabase_history:
-            st.info(f"🎯 Đang gợi ý dựa trên {len(supabase_history)} interactions của bạn")
+        supabase_history_full = get_user_interactions_full(st.session_state.user_id)
+        if supabase_history_full:
+            st.info(f"🎯 Đang gợi ý dựa trên {len(supabase_history_full)} interactions của bạn")
             results_for_me = recommend_new_user(
-                item_history=supabase_history,
+                item_history=supabase_history_full,
                 item2idx=M["item2idx"],
                 idx2item=M["idx2item"],
                 als_model=M["als_model"],
@@ -406,11 +406,11 @@ with tab1:
             target_user_id = int(user_input_id)
 
         if use_logged_history and st.session_state.logged_in:
-            supabase_history = get_user_interactions(st.session_state.user_id)
-            if supabase_history:
-                st.info(f"🔗 Dùng {len(supabase_history)} interactions từ lịch sử cá nhân của bạn")
+            supabase_history_full = get_user_interactions_full(st.session_state.user_id)
+            if supabase_history_full:
+                st.info(f"🎯 Đang gợi ý dựa trên {len(supabase_history_full)} interactions của bạn")
                 results = recommend_new_user(
-                    item_history=supabase_history,
+                    item_history=supabase_history_full,
                     item2idx=M["item2idx"],
                     idx2item=M["idx2item"],
                     als_model=M["als_model"],
@@ -420,7 +420,8 @@ with tab1:
                 )
                 st.markdown("**Lịch sử của bạn** (5 gần nhất):")
                 chips = "".join([
-                    f'<span class="history-chip">#{i} · {get_item_category(i, M["item_cat_map"])}</span>'  for i in supabase_history[-5:]
+                    f'<span class="history-chip">#{r["item_id"]} · {get_item_category(r["item_id"], M["item_cat_map"])}</span>'
+                    for r in supabase_history_full[-5:]  
                 ])
                 st.markdown(chips, unsafe_allow_html=True)
             else:
@@ -690,6 +691,33 @@ with tab4:
             c2.metric("👁 Views", n_view)
             c3.metric("🛒 Carts", n_cart)
             c4.metric("💳 Buys", n_buy)
+            st.divider()
+
+            # ── Nút xóa lịch sử ──
+            col_del, col_confirm = st.columns([2, 2])
+            with col_del:
+                btn_delete = st.button(
+                    "🗑️ Xóa toàn bộ lịch sử",
+                    key="btn_delete_history",
+                    use_container_width=True,
+                    type="primary"
+                )
+            with col_confirm:
+                confirm_delete = st.checkbox(
+                    "✅ Tôi xác nhận muốn xóa",
+                    key="confirm_delete_checkbox"
+                )
+
+            if btn_delete:
+                if confirm_delete:
+                    ok = delete_user_interactions(st.session_state.user_id)
+                    if ok:
+                        st.success("✅ Đã xóa toàn bộ lịch sử!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Xóa thất bại, thử lại sau.")
+                else:
+                    st.warning("⚠️ Hãy tick xác nhận trước khi xóa!")
             st.divider()
 
             # ── Timeline — mới nhất lên trên ──
