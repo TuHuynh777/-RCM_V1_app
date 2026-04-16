@@ -175,21 +175,7 @@ with st.sidebar:
             st.session_state.user_id = None
             st.session_state.username = None
             st.rerun()
-        st.divider()
-        st.markdown("**📦 Lịch sử mua sắm của bạn**")
-        history_full = get_user_interactions_full(st.session_state.user_id, limit=10)
-        if history_full:
-            for row in history_full[-5:]:
-                item_id    = row["item_id"]
-                event_type = row.get("event_type", "view")
-                cat        = get_item_category(item_id, M["item_cat_map"])
-                ev_emoji   = get_event_emoji(event_type)
-                st.markdown(
-                    f'<span class="history-chip">{ev_emoji} #{item_id} · {cat}</span>',
-                    unsafe_allow_html=True
-                )
-        else:
-            st.caption("Chưa có lịch sử. Hãy click vào sản phẩm!")
+
     else:
         tab_login, tab_reg = st.tabs(["🔑 Đăng nhập", "📝 Đăng ký"])
         with tab_login:
@@ -220,16 +206,104 @@ with st.sidebar:
                 else:
                     st.warning("Vui lòng nhập đầy đủ")
 
-  
-
-
-
 
 tab1, tab2, tab3, tab4 = st.tabs(["🔍 Gợi ý sản phẩm", "📊 Hiệu suất Model", "❄️ Cold Start", "📦 Lịch sử của tôi"])
 
-
 with tab1:
     st.markdown("## 🛒 Gợi ý sản phẩm cá nhân hoá")
+    # ── Search bar ──
+    with st.expander("🔍 Tìm kiếm sản phẩm theo Item ID hoặc Category", expanded=False):
+        search_col1, search_col2 = st.columns([2, 2])
+
+        with search_col1:
+            search_item_id = st.number_input(
+                "🔎 Tìm theo Item ID",
+                min_value=0, value=0, step=1,
+                key="search_item_id_input",
+                help="Nhập item ID để xem chi tiết và tương tác"
+            )
+            btn_search_item = st.button("Tìm Item", key="btn_search_item", use_container_width=True)
+
+        with search_col2:
+            # Build danh sách category từ item_cat_map
+            all_categories = sorted(set(M["item_cat_map"].values()))
+            search_cat = st.selectbox(
+                "🏷️ Lọc theo Category",
+                ["— Chọn category —"] + all_categories,
+                key="search_cat_select"
+            )
+            btn_search_cat = st.button("Tìm theo Category", key="btn_search_cat", use_container_width=True)
+
+        # ── Kết quả search theo Item ID ──
+        if btn_search_item and search_item_id > 0:
+            if search_item_id in M["item_cat_map"]:
+                cat    = get_item_category(search_item_id, M["item_cat_map"])
+                img    = get_item_image_url(search_item_id, M["item_cat_map"])
+                pop    = M["item_popularity"].get(search_item_id, 0)
+                ev     = get_event_emoji(M["item_event_type"].get(search_item_id, "view"))
+                st.markdown("---")
+                sc1, sc2 = st.columns([1, 3])
+                with sc1:
+                    st.image(img, use_container_width=True)
+                with sc2:
+                    st.markdown(f"### Item #{search_item_id}")
+                    st.markdown(f"🏷️ **Category**: `{cat}`")
+                    st.caption(f"{ev} {pop:,} events")
+                    if st.session_state.logged_in:
+                        sb1, sb2, sb3 = st.columns(3)
+                        with sb1:
+                            if st.button("👁 View", key=f"search_view_{search_item_id}", use_container_width=True):
+                                save_interaction(st.session_state.user_id, search_item_id, "view")
+                                st.toast(f"👁 Viewed #{search_item_id}")
+                        with sb2:
+                            if st.button("🛒 Cart", key=f"search_cart_{search_item_id}", use_container_width=True):
+                                save_interaction(st.session_state.user_id, search_item_id, "cart")
+                                st.toast(f"🛒 Cart #{search_item_id}")
+                        with sb3:
+                            if st.button("💳 Buy", key=f"search_buy_{search_item_id}", use_container_width=True):
+                                save_interaction(st.session_state.user_id, search_item_id, "buy")
+                                st.toast(f"💳 Bought #{search_item_id}")
+                    else:
+                        st.caption("🔒 Đăng nhập để tương tác")
+            else:
+                st.warning(f"⚠️ Item #{search_item_id} không tồn tại trong dataset.")
+
+        # ── Kết quả search theo Category ──
+        if btn_search_cat and search_cat != "— Chọn category —":
+            cat_items = [
+                iid for iid, cat in M["item_cat_map"].items()
+                if cat == search_cat
+            ]
+            # Sort theo popularity, lấy top 10
+            cat_items_sorted = sorted(
+                cat_items,
+                key=lambda x: M["item_popularity"].get(x, 0),
+                reverse=True
+            )[:10]
+
+            st.markdown(f"---")
+            st.markdown(f"**🏷️ Top 10 items phổ biến nhất trong `{search_cat}`**")
+            cat_cols = st.columns(5)
+            for ci, iid in enumerate(cat_items_sorted):
+                with cat_cols[ci % 5]:
+                    st.image(get_item_image_url(iid, M["item_cat_map"]), use_container_width=True)
+                    st.markdown(f"**#{iid}**")
+                    pop = M["item_popularity"].get(iid, 0)
+                    st.caption(f"{pop:,} events")
+                    if st.session_state.logged_in:
+                        cb1, cb2, cb3 = st.columns(3)
+                        with cb1:
+                            if st.button("👁", key=f"cat_view_{iid}_{ci}", use_container_width=True):
+                                save_interaction(st.session_state.user_id, iid, "view")
+                                st.toast(f"👁 #{iid}")
+                        with cb2:
+                            if st.button("🛒", key=f"cat_cart_{iid}_{ci}", use_container_width=True):
+                                save_interaction(st.session_state.user_id, iid, "cart")
+                                st.toast(f"🛒 #{iid}")
+                        with cb3:
+                            if st.button("💳", key=f"cat_buy_{iid}_{ci}", use_container_width=True):
+                                save_interaction(st.session_state.user_id, iid, "buy")
+                                st.toast(f"💳 #{iid}")
     col_input, col_mode = st.columns([3, 1])
     with col_input:
         user_input_id = st.number_input(
