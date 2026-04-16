@@ -5,7 +5,7 @@ Streamlit App với Supabase Auth + Interaction Tracking
 import streamlit as st
 import random
 import numpy as np
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta  
 from utils.model_loader import load_als_artifacts, load_cold_start, load_events_metadata, load_test_df, MODEL_DIR, DATA_DIR, ALS_MODEL_FILE, USER_ITEM_FILE, MAPPINGS_FILE, IS_CLOUD
 from utils.recommender import recommend_existing_user, recommend_new_user, get_cold_start_recommendations
 from utils.image_utils import load_item_category_map, get_item_category, get_item_image_url, get_event_emoji
@@ -737,7 +737,18 @@ with tab4:
                 "buy":  ("💳", "Buy",   "#e8f5e9", "#2e7d32"),
             }
         
+            # ✅ hardcode UTC+7
+            VN_TZ = timezone(timedelta(hours=7))
 
+            time_str = ""
+            if created_at:
+                try:
+                    dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                    dt_local = dt.astimezone(VN_TZ)    # ← đổi chỗ này
+                    time_str = dt_local.strftime("%d/%m/%Y %H:%M")
+                except:
+                    time_str = created_at[:16]
+                    
             for row in reversed(full_history):
                 item_id    = row["item_id"]
                 event_type = row.get("event_type", "view")
