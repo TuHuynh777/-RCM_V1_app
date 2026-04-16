@@ -308,15 +308,15 @@ with tab1:
                         with cb1:
                             if st.button("👁", key=f"cat_view_{iid}_{ci}", use_container_width=True):
                                 save_interaction(st.session_state.user_id, iid, "view")
-                                st.toast(f"👁 #{iid}")
+                                st.toast(f"👁 Viewed #{iid}")
                         with cb2:
                             if st.button("🛒", key=f"cat_cart_{iid}_{ci}", use_container_width=True):
                                 save_interaction(st.session_state.user_id, iid, "cart")
-                                st.toast(f"🛒 #{iid}")
+                                st.toast(f"🛒 Cart #{iid}")
                         with cb3:
                             if st.button("💳", key=f"cat_buy_{iid}_{ci}", use_container_width=True):
                                 save_interaction(st.session_state.user_id, iid, "buy")
-                                st.toast(f"💳 #{iid}")
+                                st.toast(f"💳 Bought #{iid}")
     col_input, col_mode = st.columns([3, 1])
     with col_input:
         user_input_id = st.number_input(
@@ -503,15 +503,15 @@ with tab1:
                     with b1:
                         if st.button("👁", key=f"forme_view_{rec.item_id}_{i}", use_container_width=True, help="View"):
                             save_interaction(st.session_state.user_id, rec.item_id, "view")
-                            st.toast("✅ Viewed")
+                            st.toast(f"👁 Viewed #{rec.item_id}")
                     with b2:
                         if st.button("🛒", key=f"forme_cart_{rec.item_id}_{i}", use_container_width=True, help="Add to cart (×3)"):
                             save_interaction(st.session_state.user_id, rec.item_id, "cart")
-                            st.toast("✅ Added to Cart")
+                            st.toast(f"🛒 Cart #{rec.item_id}")
                     with b3:
                         if st.button("💳", key=f"forme_buy_{rec.item_id}_{i}", use_container_width=True, help="Buy (×10)"):
                             save_interaction(st.session_state.user_id, rec.item_id, "buy")
-                            st.toast("✅ Bought")
+                            st.toast(f"💳 Bought #{rec.item_id}")
 
     # Render "Recommend / Random user"
     elif st.session_state.rcm_mode == "main" and st.session_state.rcm_results:
@@ -537,15 +537,15 @@ with tab1:
                     with b1:
                         if st.button("👁", key=f"view_{rec.item_id}_{i}", use_container_width=True, help="View"):
                             save_interaction(st.session_state.user_id, rec.item_id, "view")
-                            st.toast("✅ Viewed")
+                            st.toast(f"👁 Viewed #{rec.item_id}")
                     with b2:
                         if st.button("🛒", key=f"cart_{rec.item_id}_{i}", use_container_width=True, help="Add to cart (×3)"):
                             save_interaction(st.session_state.user_id, rec.item_id, "cart")
-                            st.toast("✅ Added to Cart")
+                            st.toast(f"🛒 Cart #{rec.item_id}")
                     with b3:
                         if st.button("💳", key=f"buy_{rec.item_id}_{i}", use_container_width=True, help="Buy (×10)"):
                             save_interaction(st.session_state.user_id, rec.item_id, "buy")
-                            st.toast("✅ Bought")
+                            st.toast(f"💳 Bought #{rec.item_id}")
         if gt_items:
             rec_ids = {r.item_id for r in st.session_state.rcm_results}
             hits = len(rec_ids & gt_items)
