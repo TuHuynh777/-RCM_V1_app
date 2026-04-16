@@ -3,9 +3,6 @@ ShopSense — ALS Recommender V1
 Streamlit App với Supabase Auth + Interaction Tracking
 """
 import streamlit as st
-import numpy as np
-import os
-import scipy.sparse as sp
 from utils.model_loader import load_als_artifacts, load_cold_start, load_events_metadata, load_test_df, MODEL_DIR, DATA_DIR, ALS_MODEL_FILE, USER_ITEM_FILE, MAPPINGS_FILE, IS_CLOUD
 from utils.recommender import recommend_existing_user, recommend_new_user, get_cold_start_recommendations
 from utils.image_utils import load_item_category_map, get_item_category, get_item_image_url, get_event_emoji
@@ -157,7 +154,7 @@ if "last_results_mode" not in st.session_state: st.session_state.last_results_mo
 with st.sidebar:
     st.markdown("## 🛍️ ShopSense")
     st.markdown("**ALS Recommender · V1**")
-
+    st.divider()
     st.markdown("**ℹ️ Về model**")
     st.markdown("""
     - **ALS** (Alternating Least Squares)
@@ -299,10 +296,10 @@ with tab1:
                     if st.button(f"👁 View", key=f"forme_{rec.item_id}_{i}", use_container_width=True):
                         save_interaction(st.session_state.user_id, rec.item_id, "view")
                         st.toast(f"✅ Đã lưu: Item #{rec.item_id}")
-            st.stop()  # ← dừng, không render tiếp phần recommend bên dưới
         else:
             st.warning("⚠️ Bạn chưa có lịch sử! Hãy vào tab **Cold Start** và bấm View vài sản phẩm trước.")
-            st.stop()
+
+        
     target_user_id = None
     seq = []
 
