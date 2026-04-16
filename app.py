@@ -740,15 +740,7 @@ with tab4:
             # ✅ hardcode UTC+7
             VN_TZ = timezone(timedelta(hours=7))
 
-            time_str = ""
-            if created_at:
-                try:
-                    dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-                    dt_local = dt.astimezone(VN_TZ)    # ← đổi chỗ này
-                    time_str = dt_local.strftime("%d/%m/%Y %H:%M")
-                except:
-                    time_str = created_at[:16]
-                    
+
             for row in reversed(full_history):
                 item_id    = row["item_id"]
                 event_type = row.get("event_type", "view")
@@ -764,7 +756,7 @@ with tab4:
                 if created_at:
                     try:
                         dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-                        dt_local = dt.astimezone()
+                        dt_local = dt.astimezone(VN_TZ)
                         time_str = dt_local.strftime("%d/%m/%Y %H:%M")
                     except:
                         time_str = created_at[:16]
