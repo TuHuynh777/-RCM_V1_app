@@ -736,6 +736,30 @@ with tab4:
                 "cart": ("🛒 Cart",  "#fff8e1", "#f57f17"),
                 "buy":  ("💳 Buy",   "#e8f5e9", "#2e7d32"),
             }
+            # Unpack 4 giá trị thay vì 3
+            emoji, action, bg_color, text_color = EVENT_STYLE.get(
+                event_type, ("👁", "View", "#e3f2fd", "#1565c0")
+            )
+
+            st.markdown(f"""
+            <div style="
+                display:flex; align-items:center; gap:12px;
+                background:{bg_color}; border-radius:10px;
+                padding:10px 16px; margin-bottom:8px;
+                border-left:4px solid {text_color};
+            ">
+                <span style="font-size:20px">{emoji}</span>
+                <div style="flex:1">
+                    <span style="font-weight:700;color:{text_color};">{action}</span>
+                    &nbsp;·&nbsp;
+                    <span style="font-weight:700;">Item #{item_id}</span>
+                    &nbsp;·&nbsp;
+                    <span style="color:#555;">🏷️ {category}</span>
+                </div>
+                <span style="font-size:12px;color:#888;">{time_str}</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
             for row in reversed(full_history):
                 item_id    = row["item_id"]
                 event_type = row.get("event_type", "view")
