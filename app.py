@@ -6,14 +6,14 @@ import streamlit as st
 import random
 import numpy as np
 from datetime import datetime, timezone, timedelta  
-from utils.model_loader import load_als_artifacts, load_cold_start, load_events_metadata, load_test_df, MODEL_DIR, DATA_DIR, ALS_MODEL_FILE, USER_ITEM_FILE, MAPPINGS_FILE, IS_CLOUD
-from utils.recommender import recommend_existing_user, recommend_new_user, get_cold_start_recommendations
+from utils.model_loader import load_als_artifacts, load_cold_start, load_events_metadata, load_test_df, MODEL_DIR, DATA_DIR, ALS_MODEL_FILE, USER_ITEM_FILE, MAPPINGS_FILE, IS_CLOUD , load_sasrec_model, SASREC_CONFIG
+from utils.recommender import recommend_existing_user, recommend_new_user, get_cold_start_recommendations, recommend_hybrid_v2
 from utils.image_utils import load_item_category_map, get_item_category, get_item_image_url, get_event_emoji
 from utils.supabase_client import register, login, logout, save_interaction, get_user_interactions_full, delete_user_interactions
 
 
 st.set_page_config(
-    page_title="ShopSense — Recommender V1",
+    page_title="ShopSense — Recommender V2",
     page_icon="🛍️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -129,6 +129,11 @@ def init_models():
     item_popularity, item_event_type = load_events_metadata()
     test_df = load_test_df()
     item_cat_map = load_item_category_map()
+
+    # ── V2: Load SASRec ──
+    n_items = len(mappings["item2idx"])
+    sasrec_model, sasrec_device = load_sasrec_model(n_items)
+
     return {
         "als_model": als_model,
         "user_item_matrix": user_item_matrix,
@@ -140,6 +145,8 @@ def init_models():
         "item_event_type": item_event_type,
         "item_cat_map": item_cat_map,
         "test_df": test_df,
+        "sasrec_model"    : sasrec_model,   
+        "sasrec_device"   : sasrec_device,  
     }
 
 
@@ -162,12 +169,11 @@ if "rcm_mode"      not in st.session_state: st.session_state.rcm_mode     = None
 
 with st.sidebar:
     st.markdown("## 🛍️ ShopSense")
-    st.markdown("**ALS Recommender · V1**")
-    st.divider()
-    st.markdown("**ℹ️ Về model**")
+    st.markdown("**ALS + SASRec Hybrid · V2**")
     st.markdown("""
-    - **ALS** (Alternating Least Squares)
-    - Factors: 128 · Alpha: 100
+    - **Pipeline**: ALS → SASRec Re-rank
+    - ALS Factors: 128 · SASRec Blocks: 2
+    - Alpha: 0.6 · Candidates: 500 → Top-10
     - 1.4M users · 235K items
     """)
     st.divider()
@@ -367,14 +373,15 @@ with tab1:
     if btn_for_me and st.session_state.logged_in:
         supabase_history_full = get_user_interactions_full(st.session_state.user_id)
         if supabase_history_full:
-            results_for_me = recommend_new_user(
-                item_history=supabase_history_full,
-                item2idx=M["item2idx"],
-                idx2item=M["idx2item"],
-                als_model=M["als_model"],
-                item_popularity=M["item_popularity"],
-                item_event_type=M["item_event_type"],
-                top_k=10,
+            results_for_me = recommend_hybrid_v2(
+                item_history     = supabase_history_full,
+                item2idx         = M["item2idx"],
+                idx2item         = M["idx2item"],
+                als_model        = M["als_model"],
+                sasrec_model     = M["sasrec_model"],
+                device           = M["sasrec_device"],
+                item_popularity  = M["item_popularity"],
+                item_event_type  = M["item_event_type"],
             )
             st.session_state.rcm_for_me  = results_for_me
             st.session_state.rcm_mode    = "forme"
@@ -403,14 +410,15 @@ with tab1:
             supabase_history_full = get_user_interactions_full(st.session_state.user_id)
             if supabase_history_full:
                 st.info(f"🎯 Đang gợi ý dựa trên {len(supabase_history_full)} interactions của bạn")
-                results = recommend_new_user(
-                    item_history=supabase_history_full,
-                    item2idx=M["item2idx"],
-                    idx2item=M["idx2item"],
-                    als_model=M["als_model"],
-                    item_popularity=M["item_popularity"],
-                    item_event_type=M["item_event_type"],
-                    top_k=10,
+                results = recommend_hybrid_v2(
+                    item_history     = supabase_history_full,
+                    item2idx         = M["item2idx"],
+                    idx2item         = M["idx2item"],
+                    als_model        = M["als_model"],
+                    sasrec_model     = M["sasrec_model"],
+                    device           = M["sasrec_device"],
+                    item_popularity  = M["item_popularity"],
+                    item_event_type  = M["item_event_type"],
                 )
                 st.markdown("**Lịch sử của bạn** (5 gần nhất):")
                 chips = "".join([
@@ -456,17 +464,18 @@ with tab1:
                     st.session_state.show_warning = True
                 else:
                     try:
-                        results = recommend_existing_user(
-                            user_id=target_user_id,
-                            user2idx=M["user2idx"],
-                            item2idx=M["item2idx"],
-                            idx2item=M["idx2item"],
-                            als_model=M["als_model"],
-                            user_item_matrix=M["user_item_matrix"],
-                            item_popularity=M["item_popularity"],
-                            item_event_type=M["item_event_type"],
-                            history_set=history_set,
-                            top_k=10,
+                        results = recommend_hybrid_v2(
+                                item_history     = list(history_raw),
+                                item2idx         = M["item2idx"],
+                                user_id          = target_user_id,
+                                user2idx         = M["user2idx"],
+                                idx2item         = M["idx2item"],
+                                als_model        = M["als_model"],
+                                user_item_matrix = M["user_item_matrix"],
+                                sasrec_model     = M["sasrec_model"],
+                                device           = M["sasrec_device"],
+                                item_popularity  = M["item_popularity"],
+                                item_event_type  = M["item_event_type"],
                         )
                         st.session_state.show_warning = False
                         gt_items = set(seq[-3:]) if len(seq) > 3 else set()
@@ -553,36 +562,86 @@ with tab1:
 
 
 with tab2:
-    st.markdown("## 📊 Hiệu suất ALS V1")
-    st.caption("Đánh giá trên **test set** (11,104 users, sample 2,000) | n_ground_truth = 3")
-    metrics = {"HR@10": 0.5690, "Recall@10": 0.3048, "NDCG@10": 0.2333, "MRR@10": 0.2925}
-    col1, col2, col3, col4 = st.columns(4)
-    for col, (metric, value) in zip([col1, col2, col3, col4], metrics.items()):
-        with col:
-            st.metric(label=metric, value=f"{value:.4f}", delta=None)
+    st.markdown("## 📊 Hiệu suất ALS + SASRec Hybrid V2")
+    st.caption("Pipeline: ALS retrieval top-500 → SASRec re-rank → MinMax normalize → Weighted combine")
+
+    # ── So sánh V1 vs V2 ──
+    col_v1, col_v2 = st.columns(2)
+
+    with col_v1:
+        st.markdown("### 🔵 V1 — ALS Baseline (TEST)")
+        st.caption("11,104 users · sample 2,000 · n_ground_truth=3")
+        m1 = {"HR@10": 0.5690, "Recall@10": 0.3048, "NDCG@10": 0.2333, "MRR@10": 0.2925}
+        c1, c2, c3, c4 = st.columns(4)
+        for col, (k, v) in zip([c1,c2,c3,c4], m1.items()):
+            col.metric(k, f"{v:.4f}")
+
+    with col_v2:
+        st.markdown("### 🔴 V2 — Hybrid (VAL · alpha=0.6)")
+        st.caption("Tune trên VAL set · alpha search [0.0 → 1.0]")
+        m2_val = {"HR@10": 0.6205, "Recall@10": 0.3322, "NDCG@10": 0.2582, "MRR@10": 0.3280}
+        c1, c2, c3, c4 = st.columns(4)
+        for col, (k, v) in zip([c1,c2,c3,c4], m2_val.items()):
+            delta = round(v - m1[k], 4)
+            col.metric(k, f"{v:.4f}", delta=f"{delta:+.4f}")
 
     st.divider()
+
+    # ── TEST set V2 ──
+    st.markdown("### 🧪 V2 — TEST set (alpha=0.6)")
+    st.caption("Đánh giá final trên test set chưa thấy trong quá trình train/tune")
+    m2_test = {"HR@10": 0.5720, "Recall@10": 0.3031, "NDCG@10": 0.2373, "MRR@10": 0.3066}
+    c1, c2, c3, c4 = st.columns(4)
+    for col, (k, v) in zip([c1,c2,c3,c4], m2_test.items()):
+        delta = round(v - m1[k], 4)
+        col.metric(k, f"{v:.4f}", delta=f"{delta:+.4f}")
+
+    st.divider()
+
+    # ── Alpha search results ──
+    st.markdown("### 🔍 Alpha Search (VAL set · sample 500)")
+    st.caption("Best alpha = **0.6** — tìm bằng grid search, tối ưu NDCG@10")
+    alpha_data = {
+        "Alpha": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+        "HR@10": [0.1920,0.2680,0.3480,0.4460,0.5340,0.5780,0.6060,0.6120,0.6060,0.5900,0.5760],
+        "NDCG@10":[0.0665,0.0908,0.1269,0.1674,0.2093,0.2340,0.2412,0.2393,0.2405,0.2375,0.2360],
+        "MRR@10": [0.1004,0.1343,0.1818,0.2329,0.2801,0.3002,0.3001,0.2922,0.2898,0.2896,0.2911],
+    }
+    import pandas as pd
+    df_alpha = pd.DataFrame(alpha_data)
+    # Highlight dòng best alpha
+    st.dataframe(
+        df_alpha.style.highlight_max(subset=["HR@10","NDCG@10","MRR@10"], color="#fff9c4"),
+        use_container_width=True,
+        hide_index=True,
+    )
+    st.info("💡 alpha=0.6 có nghĩa: **60% ALS score + 40% SASRec score** — ALS vẫn đóng vai trò chính trong retrieval, SASRec bổ sung tín hiệu sequential.")
+
+    st.divider()
+
+    # ── Model Config ──
     st.markdown("### 🔧 Model Configuration")
     col_a, col_b = st.columns(2)
     with col_a:
         st.markdown("""
+        **ALS (Retrieval)**
         | Parameter | Value |
         |---|---|
-        | Algorithm | ALS (Implicit Feedback) |
         | Factors | 128 |
         | Iterations | 20 |
-        | Regularization | 0.01 |
         | Alpha (confidence) | 100 |
+        | Candidates K | 500 |
         """)
     with col_b:
         st.markdown("""
-        | Dataset | Value |
+        **SASRec (Re-ranker)**
+        | Parameter | Value |
         |---|---|
-        | Total users | 1,407,580 |
-        | Total items | 235,061 |
-        | Events | 2,755,641 |
-        | Event weights | view×1, cart×3, buy×10 |
-        | Train/Val/Test | 38,576 / 5,440 / 11,104 |
+        | Embedding dim | 128 |
+        | Num blocks | 2 |
+        | Num heads | 4 |
+        | Max seq len | 50 |
+        | Best alpha | **0.6** |
         """)
 
     st.divider()
