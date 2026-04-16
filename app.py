@@ -480,13 +480,10 @@ with tab3:
     if "cold_random_seed" not in st.session_state:
         st.session_state["cold_random_seed"] = 42
 
-    # ── Lấy pool lớn hơn: top 200 thay vì top 10 ──
+    # ── Lấy pool lớn hơn: top 100 thay vì top 10 ──
     all_trending = get_cold_start_recommendations(
         M["cold_start_data"], M["item_popularity"], M["item_event_type"], top_k=200
     )
-    with st.expander("DEBUG Cold Start"):
-        st.write("DEBUG len(trending_items):", len(M["cold_start_data"].get("trending_items", [])))
-        st.write("DEBUG len(all_trending):", len(all_trending))
 
     # ── Build danh sách category ĐỘNG từ pool ──
     cat_counts = {}
