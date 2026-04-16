@@ -732,9 +732,9 @@ with tab4:
             # ── Timeline — mới nhất lên trên ──
             st.markdown("### 🕐 Timeline")
             EVENT_STYLE = {
-                "view": ("👁 View",  "#e3f2fd", "#1565c0"),
-                "cart": ("🛒 Cart",  "#fff8e1", "#f57f17"),
-                "buy":  ("💳 Buy",   "#e8f5e9", "#2e7d32"),
+                "view": ("👁", "View",  "#e3f2fd", "#1565c0"),
+                "cart": ("🛒", "Cart",  "#fff8e1", "#f57f17"),
+                "buy":  ("💳", "Buy",   "#e8f5e9", "#2e7d32"),
             }
         
 
