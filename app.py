@@ -176,7 +176,11 @@ with st.sidebar:
     - Alpha: 0.6 · Candidates: 500 → Top-10
     """)
 
-    st.caption("📦 Dataset: 1.4M users · 235K items · RetailRocket")
+    st.markdown(
+        "<p style='font-size:13px; color:#b0c4de; margin-top:4px;'>"
+        "📦 Dataset: 1.4M users · 235K items · RetailRocket</p>",
+        unsafe_allow_html=True
+    )
     st.divider()
 
     if st.session_state.logged_in:
