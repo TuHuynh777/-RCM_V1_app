@@ -379,9 +379,9 @@ with tab1:
             st.session_state.rcm_for_me  = results_for_me
             st.session_state.rcm_mode    = "forme"
             st.session_state.rcm_results = []           # clear main results
-    else:
-        st.warning("⚠️ Bạn chưa có lịch sử! Hãy vào tab **Cold Start** và bấm View vài sản phẩm trước.")
-        st.session_state.rcm_for_me = []
+        else:
+            st.warning("⚠️ Bạn chưa có lịch sử! Hãy vào tab **Cold Start** và bấm View vài sản phẩm trước.")
+            st.session_state.rcm_for_me = []
 
         
     target_user_id = None
