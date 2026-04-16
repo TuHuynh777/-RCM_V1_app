@@ -106,6 +106,18 @@ h1, h2, h3 { color: #1a237e !important; }
     font-weight: 600 !important;
     color: #1a237e !important;
 }
+/* Fix caption bị mờ trong sidebar */
+[data-testid="stSidebar"] small,
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {
+    color: #e8f0fe !important;
+    opacity: 1 !important;
+}
+/* Fix history-chip màu chữ trong sidebar */
+[data-testid="stSidebar"] .history-chip {
+    color: #1a237e !important;
+    background: #e8f0fe !important;
+}
+            
 </style>
 """, unsafe_allow_html=True)
 
@@ -145,6 +157,13 @@ if "last_results_mode" not in st.session_state: st.session_state.last_results_mo
 with st.sidebar:
     st.markdown("## 🛍️ ShopSense")
     st.markdown("**ALS Recommender · V1**")
+
+    st.markdown("**ℹ️ Về model**")
+    st.markdown("""
+    - **ALS** (Alternating Least Squares)
+    - Factors: 128 · Alpha: 100
+    - 1.4M users · 235K items
+    """)
     st.divider()
 
     if st.session_state.logged_in:
@@ -195,13 +214,8 @@ with st.sidebar:
                 else:
                     st.warning("Vui lòng nhập đầy đủ")
 
-    st.divider()
-    st.markdown("**ℹ️ Về model**")
-    st.markdown("""
-    - **ALS** (Alternating Least Squares)
-    - Factors: 128 · Alpha: 100
-    - 1.4M users · 235K items
-    """)
+  
+
 
 
 
@@ -225,11 +239,17 @@ with tab1:
             help="Dùng lịch sử click trong app thay vì dataset gốc"
         )
 
-    col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 2])
+    col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
     with col_btn1:
         btn_recommend = st.button("🚀 Recommend", type="primary", use_container_width=True)
     with col_btn2:
         btn_random = st.button("🎲 Random user", use_container_width=True)
+    with col_btn3:
+        btn_for_me = False
+        if st.session_state.logged_in:
+            btn_for_me = st.button("🎯 Recommend for me", use_container_width=True)
+        else:
+            st.caption("🔒 Đăng nhập để dùng tính năng này")
 
     if btn_random and M["test_df"] is not None:
         st.session_state.show_warning = False
@@ -252,6 +272,37 @@ with tab1:
         st.session_state["random_user_seq"] = random_row["item_sequence"]
         st.rerun()
 
+    if btn_for_me and st.session_state.logged_in:
+        supabase_history = get_user_interactions(st.session_state.user_id)
+        if supabase_history:
+            st.info(f"🎯 Đang gợi ý dựa trên {len(supabase_history)} interactions của bạn")
+            results_for_me = recommend_new_user(
+                item_history=supabase_history,
+                item2idx=M["item2idx"],
+                idx2item=M["idx2item"],
+                als_model=M["als_model"],
+                item_popularity=M["item_popularity"],
+                item_event_type=M["item_event_type"],
+                top_k=10,
+            )
+            st.markdown("### 🎯 Top-10 Gợi ý dành riêng cho bạn")
+            cols = st.columns(5)
+            for i, rec in enumerate(results_for_me[:10]):
+                with cols[i % 5]:
+                    img_url = get_item_image_url(rec.item_id, M["item_cat_map"])
+                    category = get_item_category(rec.item_id, M["item_cat_map"])
+                    ev_emoji = get_event_emoji(rec.top_event)
+                    st.image(img_url, use_container_width=True)
+                    st.markdown(f"**#{rec.item_id}**")
+                    st.markdown(f"🏷️ `{category}`")
+                    st.caption(f"{ev_emoji} {rec.popularity:,} events")
+                    if st.button(f"👁 View", key=f"forme_{rec.item_id}_{i}", use_container_width=True):
+                        save_interaction(st.session_state.user_id, rec.item_id, "view")
+                        st.toast(f"✅ Đã lưu: Item #{rec.item_id}")
+            st.stop()  # ← dừng, không render tiếp phần recommend bên dưới
+        else:
+            st.warning("⚠️ Bạn chưa có lịch sử! Hãy vào tab **Cold Start** và bấm View vài sản phẩm trước.")
+            st.stop()
     target_user_id = None
     seq = []
 
