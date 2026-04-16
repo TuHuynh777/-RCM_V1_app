@@ -3,6 +3,8 @@ ShopSense — ALS Recommender V1
 Streamlit App với Supabase Auth + Interaction Tracking
 """
 import streamlit as st
+import random
+import numpy as np
 from utils.model_loader import load_als_artifacts, load_cold_start, load_events_metadata, load_test_df, MODEL_DIR, DATA_DIR, ALS_MODEL_FILE, USER_ITEM_FILE, MAPPINGS_FILE, IS_CLOUD
 from utils.recommender import recommend_existing_user, recommend_new_user, get_cold_start_recommendations
 from utils.image_utils import load_item_category_map, get_item_category, get_item_image_url, get_event_emoji
@@ -250,7 +252,6 @@ with tab1:
 
     if btn_random and M["test_df"] is not None:
         st.session_state.show_warning = False
-        max_u = M["als_model"].user_factors.shape[0]
 
         # Chỉ lấy users có embedding thật trong user_factors
         valid_df = M["test_df"][
@@ -474,10 +475,65 @@ with tab2:
 with tab3:
     st.markdown("## ❄️ Cold Start — Trending Items")
     st.caption("Dùng cho users mới chưa có lịch sử tương tác")
-    trending = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"], top_k=10)
-    if trending:
+
+    # ── Init session state cho random seed ──
+    if "cold_random_seed" not in st.session_state:
+        st.session_state["cold_random_seed"] = 42
+
+    # ── Lấy pool lớn hơn: top 200 thay vì top 10 ──
+    all_trending = get_cold_start_recommendations(
+        M["cold_start_data"], M["item_popularity"], M["item_event_type"], top_k=200
+    )
+
+    # ── Build danh sách category ĐỘNG từ pool ──
+    cat_counts = {}
+    for r in all_trending:
+        cat = get_item_category(r.item_id, M["item_cat_map"])
+        cat_counts[cat] = cat_counts.get(cat, 0) + 1
+    sorted_cats = sorted(cat_counts.keys(), key=lambda c: -cat_counts[c])
+    all_cat_options = ["🌟 Tất cả"] + sorted_cats
+
+    # ── Controls: filter + random button ──
+    col_cat, col_rand = st.columns([3, 1])
+    with col_cat:
+        selected_cat = st.selectbox(
+            "🏷️ Lọc theo danh mục",
+            all_cat_options,
+            key="cold_cat_filter"
+        )
+    with col_rand:
+        st.write("")  # spacing để button thẳng hàng với selectbox
+        st.write("")
+        if st.button("🔀 Random items", use_container_width=True):
+            st.session_state["cold_random_seed"] = int(np.random.randint(0, 99999))
+            st.rerun()
+
+    # ── Category badges: thống kê nhanh ──
+    badges_html = " ".join([
+        f'<span style="display:inline-block;background:#e8eaf6;border:1px solid #9fa8da;'
+        f'border-radius:20px;padding:3px 10px;margin:2px;font-size:12px;color:#283593;">'
+        f'<b>{cat}</b>&nbsp;·&nbsp;{cnt}</span>'
+        for cat, cnt in sorted(cat_counts.items(), key=lambda x: -x[1])
+    ])
+    st.markdown(f"**📊 Phân bố danh mục** (pool {len(all_trending)} items): " + badges_html, unsafe_allow_html=True)
+    st.divider()
+
+    # ── Filter theo category ──
+    if selected_cat == "🌟 Tất cả":
+        pool = all_trending
+    else:
+        pool = [r for r in all_trending if get_item_category(r.item_id, M["item_cat_map"]) == selected_cat]
+
+    # ── Random sample từ pool (dùng seed để stable trong 1 session) ──
+    rng = random.Random(st.session_state["cold_random_seed"])
+    display_items = rng.sample(pool, min(10, len(pool))) if pool else []
+
+    # ── Render items ──
+    if display_items:
+        label = selected_cat if selected_cat != "🌟 Tất cả" else "Trending"
+        st.markdown(f"### 🛍️ {label} — {len(display_items)} sản phẩm")
         cols = st.columns(5)
-        for i, rec in enumerate(trending[:10]):
+        for i, rec in enumerate(display_items):
             with cols[i % 5]:
                 img_url = get_item_image_url(rec.item_id, M["item_cat_map"])
                 category = get_item_category(rec.item_id, M["item_cat_map"])
@@ -487,11 +543,13 @@ with tab3:
                 st.markdown(f"🏷️ `{category}`")
                 st.caption(f"{ev_emoji} {rec.popularity:,} events")
                 if st.session_state.logged_in:
-                    if st.button(f"👁 View", key=f"cold_{rec.item_id}_{i}", use_container_width=True):
+                    # Key thêm seed để tránh DuplicateWidgetID khi random đổi items
+                    btn_key = f"cold_{rec.item_id}_{i}_{st.session_state['cold_random_seed']}"
+                    if st.button("👁 View", key=btn_key, use_container_width=True):
                         save_interaction(st.session_state.user_id, rec.item_id, "view")
                         st.toast(f"✅ Đã lưu: Item #{rec.item_id}")
     else:
-        st.info("Cold start data chưa được load.")
+        st.info(f"Không có sản phẩm nào trong danh mục **{selected_cat}**. Thử chọn danh mục khác!")
 
     st.divider()
     st.markdown("""
