@@ -68,6 +68,7 @@ def save_interaction(user_id: str, item_id: int, event_type: str = "view") -> bo
     """Lưu 1 interaction vào Supabase"""
     sb = get_supabase()
     try:
+        item_id = int(item_id)
         sb.table("interactions").insert({
             "user_id"   : user_id,
             "item_id"   : item_id,
