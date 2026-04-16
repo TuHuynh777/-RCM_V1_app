@@ -174,8 +174,9 @@ with st.sidebar:
     - **Pipeline**: ALS → SASRec Re-rank
     - ALS Factors: 128 · SASRec Blocks: 2
     - Alpha: 0.6 · Candidates: 500 → Top-10
-    - 1.4M users · 235K items
     """)
+
+    st.caption("📦 Dataset: 1.4M users · 235K items · RetailRocket")
     st.divider()
 
     if st.session_state.logged_in:
