@@ -445,7 +445,6 @@ with tab1:
                         seq = rows.iloc[0]["item_sequence"]
 
                 history_raw = seq[:-3] if len(seq) > 3 else seq
-                history_set = set(history_raw)
 
                 if history_raw:
                     n_show = min(5, len(history_raw))
@@ -470,7 +469,8 @@ with tab1:
                         )
 
                 u_idx = M["user2idx"].get(target_user_id, -1)
-                if u_idx < 0 or u_idx >= len(M["user2idx"]):
+                matrix_size = M["user_item_matrix"].shape[0] if M["user_item_matrix"] is not None else 0
+                if u_idx < 0 or u_idx >= matrix_size:
                     st.warning("⚠️ User ID không hợp lệ hoặc ngoài phạm vi model. Hiển thị trending thay thế.")
                     results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
                     st.session_state.show_warning = True
@@ -516,6 +516,16 @@ with tab1:
                 category = get_item_category(rec.item_id, M["item_cat_map"])
                 ev_emoji = get_event_emoji(rec.top_event)
                 st.image(img_url, use_container_width=True)
+                rank = i + 1
+                rank_colors = {1:("#FFD700","#000"), 2:("#C0C0C0","#000"), 3:("#CD7F32","#fff")}
+                bg_r, tc_r = rank_colors.get(rank, ("#e8eaf6","#283593"))
+                st.markdown(
+                    f"<div style='background:{bg_r};border-radius:6px;padding:2px 8px;"
+                    f"text-align:center;margin-bottom:4px;'>"
+                    f"<span style='font-weight:800;color:{tc_r};font-size:12px'>🏅 Top {rank}</span>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
                 st.markdown(f"**#{rec.item_id}**")
                 st.markdown(f"🏷️ `{category}`")
                 st.caption(f"{ev_emoji} {rec.popularity:,} events")
@@ -547,9 +557,20 @@ with tab1:
                 is_hit   = rec.item_id in gt_items
                 ev_emoji = get_event_emoji(rec.top_event)
                 st.image(img_url, use_container_width=True)
-                badge = "🎯 **HIT**  " if is_hit else ""
-                seen  = "✅ seen" if rec.seen_before else ""
-                st.markdown(f"{badge}{seen}")
+                rank = i + 1
+                rank_colors = {1:("#FFD700","#000"), 2:("#C0C0C0","#000"), 3:("#CD7F32","#fff")}
+                bg_r, tc_r = rank_colors.get(rank, ("#e8eaf6","#283593"))
+                hit_border = "border: 2px solid #dc3545;" if is_hit else ""
+                st.markdown(
+                    f"<div style='background:{bg_r};border-radius:6px;padding:2px 8px;"
+                    f"text-align:center;margin-bottom:4px;{hit_border}'>"
+                    f"<span style='font-weight:800;color:{tc_r};font-size:12px'>🏅 Top {rank}</span>"
+                    f"{'  🎯' if is_hit else ''}"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+                seen = "✅ seen" if rec.seen_before else ""
+                if seen: st.markdown(seen)
                 st.markdown(f"**#{rec.item_id}**")
                 st.markdown(f"🏷️ `{category}`")
                 st.caption(f"{ev_emoji} {rec.popularity:,} events")
@@ -567,7 +588,7 @@ with tab1:
                         if st.button("💳", key=f"buy_{rec.item_id}_{i}", use_container_width=True, help="Buy (×10)"):
                             save_interaction(st.session_state.user_id, rec.item_id, "buy")
                             st.toast(f"💳 Bought #{rec.item_id}")
-        if gt_items:
+        if gt_items and not st.session_state.show_warning:
             rec_ids = {r.item_id for r in st.session_state.rcm_results}
             hits = len(rec_ids & gt_items)
             st.success(f"**Hit Rate: {hits}/3 ground truth items found in top-10 ({hits/3*100:.0f}%)**")
