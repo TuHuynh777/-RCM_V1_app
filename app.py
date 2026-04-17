@@ -358,11 +358,11 @@ with tab1:
 
     if btn_random and M["test_df"] is not None:
         st.session_state.show_warning = False
-
+        max_u = M["user_item_matrix"].shape[0] 
         # Chỉ lấy users có embedding thật trong user_factors
         valid_df = M["test_df"][
             M["test_df"]["visitorid"].map(
-                lambda v: M["user2idx"].get(v, -1) >= 0   # bỏ max_u đi
+                lambda v: 0 <= M["user2idx"].get(v, -1) < max_u    # bỏ max_u đi
             )
         ]
         if valid_df.empty:
