@@ -180,8 +180,7 @@ def recommend_hybrid_v2(
     ALS (top-500 candidates) → SASRec re-rank → MinMax normalize → weighted combine.
     Dùng được cho cả existing user lẫn new user (Supabase history).
     """
-
-
+        
     if not item_history:        # ← thêm dòng này
         return []
     EVENT_WEIGHTS = {"view": 1.0, "cart": 3.0, "buy": 10.0}
@@ -207,9 +206,14 @@ def recommend_hybrid_v2(
     # ── Bước 2: ALS retrieval top-500 candidates ────────────────────
     item_factors = als_model.item_factors  # (n_items, D)
 
-    if user_id is not None and user2idx is not None and user_id in user2idx:
+    if (user_id is not None 
+        and user2idx is not None 
+        and user_item_matrix is not None
+        and user_id in user2idx
+        and user2idx[user_id] < user_item_matrix.shape[0]):
         # Existing user → dùng ALS recommend() trực tiếp
         u_idx = user2idx[user_id]
+        
         als_ids, als_scores_raw = als_model.recommend(
             userid=u_idx,
             user_items=user_item_matrix[u_idx],
