@@ -176,6 +176,7 @@ with st.sidebar:
     - Alpha: 0.6 · Candidates: 500 → Top-10
     """)
 
+    st.sidebar.caption(f"Matrix shape: {M['user_item_matrix'].shape}")
     st.markdown(
         "<p style='font-size:13px; color:#b0c4de; margin-top:4px;'>"
         "📦 Dataset: 1.4M users · 235K items · RetailRocket</p>",
