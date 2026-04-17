@@ -463,7 +463,7 @@ with tab1:
 
 
                 u_idx = M["user2idx"].get(target_user_id, -1)
-                if u_idx < 0 or u_idx >=  len(M["user2idx"]):
+                if u_idx < 0 or u_idx >= M["user_item_matrix"].shape[0]:
                     st.warning("⚠️ User ID không hợp lệ hoặc ngoài phạm vi model. Hiển thị trending thay thế.")
                     results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
                     st.session_state.show_warning = True
