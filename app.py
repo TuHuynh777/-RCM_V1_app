@@ -459,18 +459,11 @@ with tab1:
                             st.markdown(f"`{idx+1}.` Item **#{item_id}** — {get_item_category(item_id, M['item_cat_map'])}")
                     if len(seq) > 3:
                         gt = seq[-3:]
-                        gt_display = " · ".join([f"#{i}" for i in gt])
-                        st.markdown(
-                            f"<div style='background:#fff3cd; border-left:4px solid #ffc107; "
-                            f"padding:8px 12px; border-radius:6px; color:#856404; font-size:13px; margin-top:8px;'>"
-                            f"🎯 <b>Ground Truth</b> (3 items user sẽ click tiếp theo): <b>{gt_display}</b>"
-                            f"</div>",
-                            unsafe_allow_html=True
-                        )
+                        st.caption(f"🎯 Ground Truth (3 items tiếp theo): {gt}")
+
 
                 u_idx = M["user2idx"].get(target_user_id, -1)
-                matrix_size = M["user_item_matrix"].shape[0] if M["user_item_matrix"] is not None else 0
-                if u_idx < 0 or u_idx >= matrix_size:
+                if u_idx < 0 or u_idx >=  len(M["user2idx"]):
                     st.warning("⚠️ User ID không hợp lệ hoặc ngoài phạm vi model. Hiển thị trending thay thế.")
                     results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
                     st.session_state.show_warning = True
