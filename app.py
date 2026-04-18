@@ -129,7 +129,11 @@ def init_models():
     item_popularity, item_event_type = load_events_metadata()
     test_df = load_test_df()
     item_cat_map = load_item_category_map()
+            # ── DEBUG: xoá sau khi fix ──
 
+    st.sidebar.caption(f"user_factors shape: {als_model.user_factors.shape}")
+    st.sidebar.caption(f"item_factors shape: {als_model.item_factors.shape}")
+    # ───────────────────────────
     # ── V2: Load SASRec ──
     n_items = len(mappings["item2idx"])
     sasrec_model, sasrec_device = load_sasrec_model(n_items)
@@ -178,6 +182,8 @@ with st.sidebar:
 
     st.sidebar.caption(f"Matrix shape: {M['user_item_matrix'].shape}")
     st.sidebar.caption(f"user2idx size: {len(M['user2idx'])}")
+
+
     st.markdown(
         "<p style='font-size:13px; color:#b0c4de; margin-top:4px;'>"
         "📦 Dataset: 1.4M users · 235K items · RetailRocket</p>",
