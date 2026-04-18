@@ -177,6 +177,7 @@ with st.sidebar:
     """)
 
     st.sidebar.caption(f"Matrix shape: {M['user_item_matrix'].shape}")
+    st.sidebar.caption(f"user2idx size: {len(M['user2idx'])}")
     st.markdown(
         "<p style='font-size:13px; color:#b0c4de; margin-top:4px;'>"
         "📦 Dataset: 1.4M users · 235K items · RetailRocket</p>",
@@ -358,7 +359,7 @@ with tab1:
 
     if btn_random and M["test_df"] is not None:
         st.session_state.show_warning = False
-        max_u = M["user_item_matrix"].shape[0] 
+        max_u = M["als_model"].user_factors.shape[0] 
         # Chỉ lấy users có embedding thật trong user_factors
         valid_df = M["test_df"][
             M["test_df"]["visitorid"].map(
@@ -464,7 +465,7 @@ with tab1:
                         st.caption(f"🎯 Ground Truth (3 items tiếp theo): {gt}")
 
                 u_idx = M["user2idx"].get(target_user_id, -1)
-                if u_idx < 0 or u_idx >= M["user_item_matrix"].shape[0]:
+                if u_idx < 0 or u_idx >= M["als_model"].user_factors.shape[0]:
                     st.warning("⚠️ User ID không hợp lệ hoặc ngoài phạm vi model. Hiển thị trending thay thế.")
                     results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
                     st.session_state.show_warning = True
