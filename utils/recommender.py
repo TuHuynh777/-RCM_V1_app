@@ -209,8 +209,7 @@ def recommend_hybrid_v2(
     if (user_id is not None 
         and user2idx is not None 
         and user_item_matrix is not None
-        and user_id in user2idx
-        and user2idx[user_id] < user_item_matrix.shape[0]):
+        and user_id in user2idx):
         # Existing user → dùng ALS recommend() trực tiếp
         u_idx = user2idx[user_id]
         

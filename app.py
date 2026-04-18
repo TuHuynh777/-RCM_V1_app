@@ -357,26 +357,16 @@ with tab1:
         else:
             st.caption("🔒 Đăng nhập để dùng tính năng này")
 
+    # app.py — trong block btn_random
     if btn_random and M["test_df"] is not None:
         st.session_state.show_warning = False
-        max_u = M["als_model"].user_factors.shape[0] 
-        # Chỉ lấy users có embedding thật trong user_factors
-        valid_df = M["test_df"][
-            M["test_df"]["visitorid"].map(
-                lambda v: 0 <= M["user2idx"].get(v, -1) < max_u    # bỏ max_u đi
-            )
-        ]
-        if valid_df.empty:
-            st.warning("⚠️ Không tìm được user hợp lệ trong test set. Thử sample không filter.")
-            # Fallback: sample toàn bộ test_df, để bounds check trong recommender.py xử lý
-            random_row = M["test_df"].sample(1).iloc[0]
-        else:
-            random_row = valid_df.sample(1).iloc[0]
-
-        st.session_state["random_user_id"]  = int(random_row["visitorid"])
+        # KHÔNG cần filter bounds vì mọi user trong test_df đều valid
+        valid_df = M["test_df"]   # ← bỏ filter lambda hoàn toàn
+        random_row = valid_df.sample(1).iloc[0]
+        st.session_state["random_user_id"] = int(random_row["visitorid"])
         st.session_state["random_user_seq"] = random_row["item_sequence"]
         st.rerun()
-
+        
     if btn_for_me and st.session_state.logged_in:
         supabase_history_full = get_user_interactions_full(st.session_state.user_id)
         if supabase_history_full:
@@ -465,7 +455,7 @@ with tab1:
                         st.caption(f"🎯 Ground Truth (3 items tiếp theo): {gt}")
 
                 u_idx = M["user2idx"].get(target_user_id, -1)
-                if u_idx < 0 or u_idx >= M["als_model"].user_factors.shape[0]:
+                if u_idx < 0:
                     st.warning("⚠️ User ID không hợp lệ hoặc ngoài phạm vi model. Hiển thị trending thay thế.")
                     results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
                     st.session_state.show_warning = True
