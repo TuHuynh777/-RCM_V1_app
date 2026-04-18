@@ -49,12 +49,23 @@ def load_als_artifacts():
 
     with open(als_path,  "rb") as f: als_model        = pickle.load(f)
     with open(map_path,  "rb") as f: mappings          = pickle.load(f)
+
     user_item_matrix = sparse.load_npz(matrix_path)
     # ── Fix: force convert sang numpy (implicit train GPU → cupy array) ──
-    if not isinstance(als_model.user_factors, np.ndarray):
-        als_model.user_factors = np.array(als_model.user_factors)
-    if not isinstance(als_model.item_factors, np.ndarray):
-        als_model.item_factors = np.array(als_model.item_factors)
+    def _to_numpy(arr):
+        if isinstance(arr, np.ndarray):
+            return arr
+        try:
+            return arr.get()           # cupy → numpy
+        except AttributeError:
+            pass
+        try:
+            return np.array(arr.tolist())
+        except Exception:
+            return np.array(arr)
+
+    als_model.user_factors = _to_numpy(als_model.user_factors)
+    als_model.item_factors = _to_numpy(als_model.item_factors)
     # ─────────────────────────────────────────────────────────────────────
 
     # DEBUG — xoá sau khi confirm shape đúng

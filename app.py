@@ -129,10 +129,7 @@ def init_models():
     item_popularity, item_event_type = load_events_metadata()
     test_df = load_test_df()
     item_cat_map = load_item_category_map()
-            # ── DEBUG: xoá sau khi fix ──
 
-    st.sidebar.caption(f"user_factors shape: {als_model.user_factors.shape}")
-    st.sidebar.caption(f"item_factors shape: {als_model.item_factors.shape}")
     # ───────────────────────────
     # ── V2: Load SASRec ──
     n_items = len(mappings["item2idx"])
