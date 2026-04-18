@@ -51,6 +51,13 @@ def load_als_artifacts():
     with open(map_path,  "rb") as f: mappings          = pickle.load(f)
     user_item_matrix = sparse.load_npz(matrix_path)
 
+    
+    # ── DEBUG: xoá sau khi fix ──
+
+    st.sidebar.caption(f"user_factors shape: {als_model.user_factors.shape}")
+    st.sidebar.caption(f"item_factors shape: {als_model.item_factors.shape}")
+    # ───────────────────────────
+
     return als_model, user_item_matrix, mappings
 
 
