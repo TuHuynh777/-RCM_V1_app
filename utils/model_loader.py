@@ -26,7 +26,7 @@ else:
     RAW_DIR    = "../datasets"
 
 # ── FILE NAMES (đã confirm từ VSCode Explorer) ─────────────────────
-ALS_MODEL_FILE   = "als_model_v1.pkl"
+ALS_MODEL_FILE   = "als_model_v1_fix.pkl"
 USER_ITEM_FILE   = "user_item_matrix_v1.npz"
 MAPPINGS_FILE    = "mappings_new.pkl"
 COLD_START_FILE  = "cold_start_data.pkl"
