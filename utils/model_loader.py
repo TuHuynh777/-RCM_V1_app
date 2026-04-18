@@ -50,6 +50,9 @@ def load_als_artifacts():
     with open(als_path,  "rb") as f: als_model        = pickle.load(f)
     with open(map_path,  "rb") as f: mappings          = pickle.load(f)
 
+    st.sidebar.write(f"TYPE user_factors: {type(als_model.user_factors)}")
+    st.sidebar.write(f"TYPE item_factors: {type(als_model.item_factors)}")
+    
     user_item_matrix = sparse.load_npz(matrix_path)
     # ── Fix: force convert sang numpy (implicit train GPU → cupy array) ──
     def _to_numpy(arr):
