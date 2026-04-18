@@ -74,7 +74,12 @@ def load_als_artifacts():
     # DEBUG — xoá sau khi confirm shape đúng
     st.sidebar.caption(f"user_factors shape: {als_model.user_factors.shape}")
     st.sidebar.caption(f"item_factors shape: {als_model.item_factors.shape}")
-    
+    # DEBUG PATH — xoá sau khi confirm
+    st.sidebar.text(f"als_path exists: {os.path.exists(als_path)}")
+    st.sidebar.text(f"als_path: {als_path}")
+    st.sidebar.text(f"matrix exists: {os.path.exists(matrix_path)}")
+    st.sidebar.text(f"matrix_path: {matrix_path}")
+    st.sidebar.text(f"MODEL_DIR: {MODEL_DIR}")
     return als_model, user_item_matrix, mappings
 
 
