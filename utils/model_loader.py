@@ -11,7 +11,7 @@ import streamlit as st
 # Khi LOCAL test: chạy từ thư mục rcm_v1_app/ nên cần trỏ lên ../
 # Khi DEPLOY Streamlit Cloud: tất cả files copy vào models/ và data/
 # → dùng IS_CLOUD để tự động switch
-IS_CLOUD = os.path.exists("models/als_model_v1.pkl")   # True khi đã deploy
+IS_CLOUD = os.path.exists("../models")   # True khi đã deploy
 
 if IS_CLOUD:
     MODEL_DIR  = "models"
@@ -54,21 +54,8 @@ def load_als_artifacts():
     st.sidebar.text(f"TYPE item: {type(als_model.item_factors)}")
 
     user_item_matrix = sparse.load_npz(matrix_path)
-    # ── Fix: force convert sang numpy (implicit train GPU → cupy array) ──
-    def _to_numpy(arr):
-        if isinstance(arr, np.ndarray):
-            return arr
-        try:
-            return arr.get()           # cupy → numpy
-        except AttributeError:
-            pass
-        try:
-            return np.array(arr.tolist())
-        except Exception:
-            return np.array(arr)
 
-    als_model.user_factors = _to_numpy(als_model.user_factors)
-    als_model.item_factors = _to_numpy(als_model.item_factors)
+
     # ─────────────────────────────────────────────────────────────────────
 
     # DEBUG — xoá sau khi confirm shape đúng
