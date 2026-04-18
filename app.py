@@ -468,6 +468,10 @@ with tab1:
                     st.warning("⚠️ User ID không hợp lệ hoặc ngoài phạm vi model. Hiển thị trending thay thế.")
                     results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
                     st.session_state.show_warning = True
+                elif not history_raw:  
+                    st.warning("⚠️ User này không có sequence trong test_df. Hiển thị trending thay thế.")
+                    results = get_cold_start_recommendations(M["cold_start_data"], M["item_popularity"], M["item_event_type"])
+                    st.session_state.show_warning = True
                 else:
                     try:
                         results = recommend_hybrid_v2(
