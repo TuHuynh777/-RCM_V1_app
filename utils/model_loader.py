@@ -11,7 +11,7 @@ import streamlit as st
 # Khi LOCAL test: chạy từ thư mục rcm_v1_app/ nên cần trỏ lên ../
 # Khi DEPLOY Streamlit Cloud: tất cả files copy vào models/ và data/
 # → dùng IS_CLOUD để tự động switch
-IS_CLOUD = os.path.exists("../models")   # True khi đã deploy
+IS_CLOUD = not os.path.exists("../models")   # True khi đã deploy
 
 if IS_CLOUD:
     MODEL_DIR  = "models"
