@@ -488,6 +488,7 @@ with tab1:
     # Render "Recommend for me"
     if st.session_state.rcm_mode == "forme" and st.session_state.rcm_for_me:
         st.markdown("### 🎯 Top-10 Gợi ý dành riêng cho bạn")
+        rank_colors = {1: ("#FFD700", "#000"), 2: ("#C0C0C0", "#000"), 3: ("#CD7F32", "#fff")}
         cols = st.columns(5)
         for i, rec in enumerate(st.session_state.rcm_for_me[:10]):
             with cols[i % 5]:
@@ -495,6 +496,15 @@ with tab1:
                 category = get_item_category(rec.item_id, M["item_cat_map"])
                 ev_emoji = get_event_emoji(rec.top_event)
                 st.image(img_url, use_container_width=True)
+                rank = i + 1
+                bg_r, tc_r = rank_colors.get(rank, ("#e8eaf6", "#283593"))
+                st.markdown(
+                    f'<div style="background:{bg_r};border-radius:6px;padding:2px 8px;'
+                    f'text-align:center;margin-bottom:4px;">'
+                    f'<span style="font-weight:800;color:{tc_r};font-size:12px;">Top {rank}</span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
                 st.markdown(f"**#{rec.item_id}**")
                 st.markdown(f"🏷️ `{category}`")
                 st.caption(f"{ev_emoji} {rec.popularity:,} events")
@@ -518,6 +528,7 @@ with tab1:
         gt_items = st.session_state.rcm_gt_items
         st.markdown("---")
         st.markdown("### 🎯 Top-10 Sản phẩm được gợi ý")
+        rank_colors = {1: ("#FFD700", "#000"), 2: ("#C0C0C0", "#000"), 3: ("#CD7F32", "#fff")}
         cols = st.columns(5)
         for i, rec in enumerate(st.session_state.rcm_results[:10]):
             with cols[i % 5]:
@@ -526,10 +537,21 @@ with tab1:
                 is_hit   = rec.item_id in gt_items
                 ev_emoji = get_event_emoji(rec.top_event)
                 st.image(img_url, use_container_width=True)
-                badge = "🎯 **HIT**  " if is_hit else ""
-                seen  = "✅ seen" if rec.seen_before else ""
-                st.markdown(f"{badge}{seen}")
-                st.markdown(f"**#{rec.item_id}**")
+                rank = i + 1
+                bg_r, tc_r = rank_colors.get(rank, ("#e8eaf6", "#283593"))
+                hit_border = "border: 2px solid #dc3545;" if is_hit else ""
+
+                st.markdown(
+                    f'<div style="background:{bg_r};border-radius:6px;padding:2px 8px;'
+                    f'text-align:center;margin-bottom:4px;{hit_border}">'
+                    f'<span style="font-weight:800;color:{tc_r};font-size:12px;">Top {rank}</span>'
+                    f'{"&nbsp;🎯" if is_hit else ""}'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+
+                seen_text = "&nbsp;✅" if rec.seen_before else ""
+                st.markdown(f"**#{rec.item_id}**{seen_text}", unsafe_allow_html=True)
                 st.markdown(f"🏷️ `{category}`")
                 st.caption(f"{ev_emoji} {rec.popularity:,} events")
                 if st.session_state.logged_in:
