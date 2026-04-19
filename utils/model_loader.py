@@ -11,7 +11,7 @@ import streamlit as st
 # Khi LOCAL test: chạy từ thư mục rcm_v1_app/ nên cần trỏ lên ../
 # Khi DEPLOY Streamlit Cloud: tất cả files copy vào models/ và data/
 # → dùng IS_CLOUD để tự động switch
-IS_CLOUD = os.path.exists("models/als_model_v1.pkl")   # True khi đã deploy
+IS_CLOUD = not os.path.exists("../models")  # True khi đã deploy
 
 if IS_CLOUD:
     MODEL_DIR  = "models"
@@ -26,7 +26,7 @@ else:
     RAW_DIR    = "../datasets"
 
 # ── FILE NAMES (đã confirm từ VSCode Explorer) ─────────────────────
-ALS_MODEL_FILE   = "als_model_v1.pkl"
+ALS_MODEL_FILE   = "als_model_v1_fix.pkl"
 USER_ITEM_FILE   = "user_item_matrix_v1.npz"
 MAPPINGS_FILE    = "mappings_new.pkl"
 COLD_START_FILE  = "cold_start_data.pkl"
