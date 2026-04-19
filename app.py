@@ -545,9 +545,9 @@ with tab1:
                     f'<div style="background:{bg_r};border-radius:6px;padding:2px 8px;'
                     f'text-align:center;margin-bottom:4px;{hit_border}">'
                     f'<span style="font-weight:800;color:{tc_r};font-size:12px;">Top {rank}</span>'
-                    f'{"&nbsp;🎯 **HIT** " if is_hit else ""}'
+                    f'{"&nbsp;🎯" if is_hit else ""}'
                     f'</div>',
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True 
                 )
 
                 seen_text = "&nbsp;✅" if rec.seen_before else ""
