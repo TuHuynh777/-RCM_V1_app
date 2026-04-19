@@ -257,7 +257,7 @@ def recommend_hybrid_v2(
     final = alpha * als_norm.flatten() + (1 - alpha) * sasr_norm.flatten()
 
     top_k_idx   = np.argsort(final)[::-1][:top_k]
-    top_k_items = [candidates[i] for i in top_k_idx]
+    #top_k_items = [candidates[i] for i in top_k_idx]
 
     # ── Bước 5: Build kết quả ───────────────────────────────────────
     results = []

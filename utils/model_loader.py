@@ -50,23 +50,8 @@ def load_als_artifacts():
     with open(als_path,  "rb") as f: als_model        = pickle.load(f)
     with open(map_path,  "rb") as f: mappings          = pickle.load(f)
 
-    st.sidebar.text(f"TYPE user: {type(als_model.user_factors)}")
-    st.sidebar.text(f"TYPE item: {type(als_model.item_factors)}")
-
     user_item_matrix = sparse.load_npz(matrix_path)
 
-
-    # ─────────────────────────────────────────────────────────────────────
-
-    # DEBUG — xoá sau khi confirm shape đúng
-    st.sidebar.caption(f"user_factors shape: {als_model.user_factors.shape}")
-    st.sidebar.caption(f"item_factors shape: {als_model.item_factors.shape}")
-    # DEBUG PATH — xoá sau khi confirm
-    st.sidebar.text(f"als_path exists: {os.path.exists(als_path)}")
-    st.sidebar.text(f"als_path: {als_path}")
-    st.sidebar.text(f"matrix exists: {os.path.exists(matrix_path)}")
-    st.sidebar.text(f"matrix_path: {matrix_path}")
-    st.sidebar.text(f"MODEL_DIR: {MODEL_DIR}")
     return als_model, user_item_matrix, mappings
 
 
