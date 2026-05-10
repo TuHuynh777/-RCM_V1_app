@@ -42,8 +42,18 @@ def _download_als_from_gdrive() -> str:
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
     local_path = os.path.join(DOWNLOAD_DIR, ALS_MODEL_FILE)
     if not os.path.exists(local_path):
-        url = f"https://drive.google.com/uc?id={ALS_GDRIVE_ID}"
-        gdown.download(url, local_path, quiet=False, fuzzy=True)
+        # Thử format URL download trực tiếp
+        url = f"https://drive.google.com/uc?export=download&id={ALS_GDRIVE_ID}&confirm=t"
+        try:
+            gdown.download(url, local_path, quiet=False, fuzzy=True)
+        except Exception as e:
+            st.error(f"❌ Download failed: {e}")
+            st.stop()
+        # Verify file download thành công và không bị corrupt
+        if not os.path.exists(local_path) or os.path.getsize(local_path) < 1_000_000:
+            os.remove(local_path) if os.path.exists(local_path) else None
+            st.error("❌ File download bị lỗi hoặc bị block bởi Google Drive. Thử lại sau.")
+            st.stop()
     return local_path
 
 # ── LOAD FUNCTIONS ─────────────────────────────────────────────────
