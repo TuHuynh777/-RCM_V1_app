@@ -170,6 +170,44 @@ with st.sidebar:
     - Factors: 128 · Alpha: 100
     - 1.4M users · 235K items
     """)
+    with st.expander("🔬 Debug: Model Info", expanded=False):
+        try:
+            als = M["als_model"]
+            mat = M["user_item_matrix"]
+
+            st.markdown("**📐 Factors Shape**")
+            st.code(
+                f"user_factors : {als.user_factors.shape}\n"
+                f"item_factors : {als.item_factors.shape}",
+                language="text"
+            )
+
+            st.markdown("**⚙️ Hyperparameters**")
+            st.code(
+                f"factors      : {als.factors}\n"
+                f"iterations   : {als.iterations}\n"
+                f"regularization: {als.regularization}\n"
+                f"alpha        : {als.alpha}",
+                language="text"
+            )
+
+            st.markdown("**🗂️ User-Item Matrix**")
+            st.code(
+                f"shape        : {mat.shape}\n"
+                f"nnz (events) : {mat.nnz:,}\n"
+                f"dtype        : {mat.dtype}",
+                language="text"
+            )
+
+            st.markdown("**🗺️ Mappings**")
+            st.code(
+                f"n_users mapped: {len(M['user2idx']):,}\n"
+                f"n_items mapped: {len(M['item2idx']):,}",
+                language="text"
+            )
+
+        except Exception as e:
+            st.error(f"Debug error: {e}")
     st.divider()
 
     if st.session_state.logged_in:
