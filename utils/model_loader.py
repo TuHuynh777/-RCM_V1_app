@@ -66,3 +66,43 @@ def load_als_artifacts():
     with open(map_path, "rb") as f: mappings  = pickle.load(f)
     user_item_matrix = sparse.load_npz(matrix_path)
     return als_model, user_item_matrix, mappings
+
+@st.cache_resource(show_spinner="⏳ Loading cold start data...")
+def load_cold_start():
+    path = os.path.join(MODEL_DIR, COLD_START_FILE)
+    if not os.path.exists(path):
+        return {"trending_items": [], "popular_items": []}
+    with open(path, "rb") as f:
+        return pickle.load(f)
+
+
+@st.cache_data(show_spinner="⏳ Loading events metadata...")
+def load_events_metadata():
+    path = os.path.join(DATA_DIR, EVENTS_FILE)
+    if not os.path.exists(path):
+        return {}, {}
+    events = pd.read_parquet(path, columns=["itemid", "event"])
+    item_popularity = events.groupby("itemid").size().to_dict()
+    item_event_type = (
+        events.groupby("itemid")["event"]
+        .agg(lambda x: x.value_counts().idxmax())
+        .to_dict()
+    )
+    return item_popularity, item_event_type
+
+
+@st.cache_data(show_spinner=False)
+def load_test_df():
+    path = os.path.join(SPLITS_DIR, TEST_FILE)
+    if not os.path.exists(path):
+        return None
+    with open(path, "rb") as f:
+        return pickle.load(f)
+
+
+def get_raw_paths():
+    return {
+        "category_tree" : os.path.join(RAW_DIR, CAT_TREE_FILE),
+        "item_prop1"    : os.path.join(RAW_DIR, ITEM_PROP1_FILE),
+        "item_prop2"    : os.path.join(RAW_DIR, ITEM_PROP2_FILE),
+    }
