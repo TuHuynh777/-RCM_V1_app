@@ -11,3 +11,4 @@ PyYAML==6.0.3
 plotly==6.6.0
 tqdm==4.67.1
 torch==2.8.0
+gdown>=4.7.1

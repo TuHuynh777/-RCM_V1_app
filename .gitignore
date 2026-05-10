@@ -9,3 +9,4 @@ __pycache__/
 
 # Raw data files quá lớn — đã precompute thành pkl rồi
 item_properties_part*.csv
+models/*.pt
